@@ -23,7 +23,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kantokittens.myapp"
     },
     "web": {
       "output": "static",
@@ -53,7 +54,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "550817e5-f337-497e-9073-5bf83bb53762"
+        "projectId": "dd13e85f-73a3-4e94-b42d-1afebe8f720d"
       }
     }
   }
