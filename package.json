@@ -19,6 +19,7 @@
     "@react-navigation/elements": "^2.6.5",
     "@react-navigation/native": "^7.1.18",
     "@react-navigation/stack": "^7.4.10",
+    "@vitejs/plugin-react": "^5.0.4",
     "axios": "^1.12.2",
     "email-validator": "^2.0.4",
     "expo": "~54.0.18",
@@ -53,7 +54,8 @@
     "react-native-screens": "~4.17.1",
     "react-native-vector-icons": "^10.3.0",
     "react-native-web": "~0.21.2",
-    "react-native-worklets": "0.6.1"
+    "react-native-worklets": "0.6.1",
+    "vite": "^7.1.11"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
