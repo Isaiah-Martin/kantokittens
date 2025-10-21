@@ -1,30 +1,22 @@
-import { Image } from 'expo-image';
-import validator from 'email-validator';
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { UserContext } from '../../components/Context';
-import {NavigationContainer, useNavigation as _useNavigation} from '@react-navigation/native';
-import { SafeAreaView, 
-         KeyboardAvoidingView, 
-         Platform, 
-         View, 
-         Text,
-         StyleSheet
-} from 'react-native';
-import { styles2 } from '../../styles/css';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Button, TextInput, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
-import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {UserContextType, User} from '../../lib/types';
-import { DOMAIN_URL } from '../../lib/constants';
-import AppStack from '../../navigation/AppStack';
-import {useNavigation} from '../../utils/hooks';
-import Navigation from './Navigation';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { validate as validateAgent } from 'email-validator';
+import { Image } from 'expo-image';
+import * as SecureStore from 'expo-secure-store';
+import { useEffect, useRef, useState } from 'react';
+import {
+  StyleSheet
+} from 'react-native';
+import { MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import { UserContext } from '../../components/Context';
+import { DOMAIN_URL } from '../../lib/constants';
+import { User, UserContextType } from '../../lib/types';
+import { styles2 } from '../../styles/css';
+import { useNavigation } from '../../utils/hooks';
 
 export default function HomeScreen({ navigation }: { navigation: any}) {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -99,7 +91,7 @@ export default function HomeScreen({ navigation }: { navigation: any}) {
        return;
     }
     //Validate the email
-    if (!validator.validate(user.email)){
+    if (!validateAgent(user.email)){
         setEmailErr("This email is not a legal email.");
         (emailEl.current as any).focus();
         return;
