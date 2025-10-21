@@ -1,0 +1,1 @@
+export const DOMAIN_URL: string = 'https://kantokittens.vercel.app';

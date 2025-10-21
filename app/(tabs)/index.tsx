@@ -1,80 +1,226 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
+import validator from 'email-validator';
+import React from 'react';
+import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { UserContext } from '../../components/Context';
+import {NavigationContainer, useNavigation as _useNavigation} from '@react-navigation/native';
+import { SafeAreaView, 
+         KeyboardAvoidingView, 
+         Platform, 
+         View, 
+         Text,
+         StyleSheet
+} from 'react-native';
+import { styles2 } from '../../styles/css';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Button, TextInput, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {UserContextType, User} from '../../lib/types';
+import { DOMAIN_URL } from '../../lib/constants';
+import AppStack from '../../navigation/AppStack';
+import {useNavigation} from '../../utils/hooks';
+import Navigation from './Navigation';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: { navigation: any}) {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [userData, setUserData] = useState<User>({});
+  const initialState = {
+      email: '',
+      password: ''
+  };
+  const [user, setUser] = useState(initialState);
+  const [emailerr, setEmailErr] = useState('');
+  const emailEl = useRef(null);
+  const [passwderr, setPassWdErr] = useState('');
+  const passwdEl = useRef(null);
+  const [inPost, setInPost] = useState(false);
+
+  const navigation2 = useNavigation();
+
+  const login = (user?: User) => {
+    if (user){
+      setUserData(user);
+      if (user.id){
+        setLoggedIn(true);
+      }
+    }
+  };
+ 
+  const logout = () => {
+    setLoggedIn(false);
+    setUserData({});
+  };
+  
+  const userContext: UserContextType = {
+    isLoggedIn: loggedIn, 
+    user: userData, 
+    login: login, 
+    logout: logout
+  };
+
+  const theme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+       primary: '#D98CBF',
+    }
+   };
+    
+        // To get a specific color, access the `colors` property on the theme
+        const primaryColor = theme.colors.primary;
+
+  function changeEmail(text: string){
+    const value = text.trim().replace(/<\/?[^>]*>/g, "");
+    setUser(prevState => ({ ...prevState, email: value }));
+  } 
+
+  function changePasswd(text: string){
+    const value = text.trim().replace(/<\/?[^>]*>/g, "");
+    setUser(prevState => ({ ...prevState, password: value }));
+  }
+  
+  function resetErrMsg(){
+    setEmailErr('');
+    setPassWdErr('');
+  }
+
+  async function submitForm(){
+    //Reset all the err messages
+    resetErrMsg();
+    //Check if Email is filled
+    if (!user.email){
+       setEmailErr("Please type your email, this field is required!");
+       (emailEl.current as any).focus();
+       return;
+    }
+    //Validate the email
+    if (!validator.validate(user.email)){
+        setEmailErr("This email is not a legal email.");
+        (emailEl.current as any).focus();
+        return;
+    }
+    //Check if Passwd is filled
+    if (!user.password){
+        setPassWdErr("Please type your password, this field is required!");
+        (passwdEl.current as any).focus();
+        return;
+    }
+
+    setInPost(true);
+    const data = null;
+    try {
+      const { data } = await axios.post(`${DOMAIN_URL}/api/login`, user);
+      setInPost(false);
+
+      if (data.no_account){
+        setEmailErr("Sorry, we can't find this account.");
+        (emailEl.current as any).focus();
+        return;
+      }
+      if (data.password_error){
+          setPassWdErr("Password error");
+          (passwdEl.current as any).focus();
+          return;
+      }
+      const {token, ...others} = data;
+
+      const userData = {...others, logintime: Math.round(new Date().getTime() / 1000)};
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await SecureStore.setItemAsync('token', token);
+      userContext.login(userData);
+      setUser(initialState);
+    } catch (error) {
+      setInPost(false);
+      console.error('API call failed:', error);
+    }
+  }
+
+  function resetForm(){
+    setUser(initialState);
+    resetErrMsg();
+  }
+
+  useEffect(() => {
+    async function fetchUserData() {
+      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
+      const { data } = await axios.get(`${DOMAIN_URL}/api/getselfdetail`, { headers: headers });
+      const {token, ...others} = data;
+      const userData = {...others, logintime: Math.round(new Date().getTime() / 1000)};
+      setUserData(userData);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await SecureStore.setItemAsync('token', token);
+    }
+    
+    async function fetchData(){
+       const user = await AsyncStorage.getItem('user');
+       const userData = user ? JSON.parse(user): {};
+       setUserData(userData);
+       if (userData.id){
+          setLoggedIn(true);
+ 
+          const logintime = userData.logintime || 0;
+          const currTime = Math.round(new Date().getTime() / 1000);
+          if (currTime > (logintime + 60 * 60 * 24 * 10)){
+             fetchUserData();
+          }
+       }
+     }
+     fetchData();
+  },[]);
+
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
       headerImage={
         <Image
-          source={require('@/assets/images/partial-react-logo.png')}
+          source={require('@/assets/images/KantoKittens.png')}
           style={styles.reactLogo}
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
+        <ThemedText type="title" style={styles.latoFont3}>Kanto Kittens</ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+      
+        <ThemedView style={styles.stepContainer}>
+          <ThemedText type="subtitle" style={styles.latoFont}>A Curated Cat Lounge on the Upper East Side</ThemedText>
+          <ThemedText type="defaultSemiBold" style={styles.latoFont2}>
+          Warm cafe where Filipino-inspired drinks and small plates meet a serene cat lounge filled with adoptable rescue cats.
+          </ThemedText>
+          <ThemedText type="defaultSemiBold" style={styles.latoFont2}>
+          Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave with a deeper connection to community and animals.
+          </ThemedText>
+        </ThemedView>
+          
+      <ThemedView style={styles.rowContainer}>
+        <ThemedView style={styles.stepContainer}>
+          <ThemedView style={styles2.statsBanner}>
+            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="cat.circle.fill" color={'black'}></IconSymbol></ThemedText>
+            <ThemedText type="subtitle" style={styles.latoFont}>Cozy with Cats</ThemedText>
+          </ThemedView>
+        </ThemedView>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
+        <ThemedView style={styles.stepContainer}>
+          <ThemedView style={styles2.statsBanner}>
+            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="0.square" color={'black'}></IconSymbol></ThemedText>
+            <ThemedText type="subtitle" style={styles.latoFont}>Cafe Setting</ThemedText>
+          </ThemedView>
+        </ThemedView>
+
+        <ThemedView style={styles.stepContainer}>
+          <ThemedView style={styles2.statsBanner}>
+            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="0.circle" color={'black'}></IconSymbol></ThemedText>
+            <ThemedText type="subtitle" style={styles.latoFont}>Community</ThemedText>
+          </ThemedView>
+        </ThemedView>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <UserContext.Provider value={userContext}>
+        </UserContext.Provider>
+        </ParallaxScrollView>
   );
 }
 
@@ -87,6 +233,23 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    flex: 1, // Allows the container to take full height
+  },
+  latoFont: {
+    fontFamily: 'Lato',
+    fontSize: 20
+  },
+  latoFont2: {
+    fontFamily: 'Lato',
+    fontSize: 20,
+    fontWeight: 'light'
+  },
+  latoFont3: {
+    fontFamily: 'Georgia',
+    fontSize: 24
   },
   reactLogo: {
     height: 178,
