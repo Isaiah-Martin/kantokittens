@@ -1,9 +1,8 @@
 # Kanto Kittens
 
-A Curated Cat Lounge on the Upper East Side
+#### Warm cafe where Filipino-inspired drinks and small plates meet a serene cat lounge filled with adoptable rescue cats.
 
-Warm cafe where Filipino-inspired drinks and small plates meet a serene cat lounge filled with adoptable rescue cats.
-Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave with a deeper connection to community and animals.
+#### Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave with a deeper connection to community and animals.
 
 ## Local Build Testing
 
