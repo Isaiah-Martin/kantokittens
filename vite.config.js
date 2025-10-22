@@ -9,10 +9,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // This is the key change
-  build: {
-    rollupOptions: {
-      external: ['react-native'],
-    },
-  },
 });
