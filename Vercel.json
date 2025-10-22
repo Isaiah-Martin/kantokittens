@@ -2,7 +2,9 @@
   "rewrites": [
     {
       "source": "/(.*)",
+      "buildCommand": "CI='' npm run build",
       "destination": "index.html"
     }
   ]
+  
 }
