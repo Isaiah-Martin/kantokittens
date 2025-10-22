@@ -14,12 +14,5 @@ export default defineConfig({
     alias: {
       'react-native': 'react-native-web',
     },
-},
-  build: {
-    rollupOptions: {
-      // Ensure that problematic modules are externalized
-      // This is a last resort if other methods fail
-      external: ['react-native', 'react-native-vector-icons', '../../components/parallax-scroll-view', '@expo/vector-icons'],
-       },
-  },
+}
 });

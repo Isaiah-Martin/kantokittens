@@ -15,5 +15,13 @@ export default defineConfig({
             { find: '@expo/vector-icons', replacement: 'react' },
       ],
     }
-  }
+  },
+  optimizeDeps: {
+    include: ['@expo/vector-icons'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
+  },
 });
