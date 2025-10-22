@@ -2,21 +2,24 @@
 import commonjs from '@rollup/plugin-commonjs';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import reactNativeWeb from 'vite-plugin-react-native-web';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   plugins: [
     react(),
+    reactNativeWeb(),
     commonjs({
       // Ensure the commonjs plugin processes the expo modules
       include: '/node_modules/',
     }),
     tsconfigPaths(),
   ],
-  optimizeDeps: {
-    // Specify the dependencies that should be pre-bundled by Vite
-    include: ['@expo/vector-icons'],
-  },
+  resolve: {
+    alias: {
+      'react-native': 'react-native-web',
+    },
+},
   build: {
     rollupOptions: {
       // Ensure that problematic modules are externalized
