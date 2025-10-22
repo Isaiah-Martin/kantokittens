@@ -12,7 +12,7 @@ export default defineConfig({
   // This is the key change
   build: {
     rollupOptions: {
-      external: ['react-native'],
+      external: ['react-native', 'react-native-vector-icons'],
     },
   },
 });
