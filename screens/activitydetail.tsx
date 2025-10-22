@@ -15,7 +15,7 @@ import { SafeAreaView,
 } from 'react-native';
 import { Button, TextInput, Switch, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcons from "@react-native-vector-icons/material-icons";
 import { styles2 } from '../styles/css';
 import { UserContext } from '../components/Context';
 import { DOMAIN_URL } from '../lib/constants';
