@@ -58,6 +58,7 @@
     "vite": "^7.1.11"
   },
   "devDependencies": {
+    "@types/node": "^24.9.1",
     "@types/react": "~19.2.2",
     "eslint": "^9.38.0",
     "eslint-config-expo": "~10.0.0",
