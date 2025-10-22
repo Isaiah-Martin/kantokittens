@@ -1,5 +1,4 @@
 // vite.config.ts
-import commonjs from '@rollup/plugin-commonjs';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import reactNativeWeb from 'vite-plugin-react-native-web';
@@ -9,10 +8,6 @@ export default defineConfig({
   plugins: [
     react(),
     reactNativeWeb(),
-    commonjs({
-      // Ensure the commonjs plugin processes the expo modules
-      include: '/node_modules/',
-    }),
     tsconfigPaths(),
   ],
   resolve: {

@@ -1,6 +1,7 @@
 import ParallaxScrollView from "@../../components/parallax-scroll-view";
 import { ThemedText } from '@../../components/themed-text';
 import { ThemedView } from '@../../components/themed-view';
+import kantoKittensImage from '@/assets/images/KantoKittens.png';
 import axios from 'axios';
 import { validate as validateAgent } from 'email-validator';
 import { Image } from 'expo-image';
@@ -170,7 +171,7 @@ export default function HomeScreen({ navigation }: { navigation: any}) {
       headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
       headerImage={
         <Image
-          source={require('@/assets/images/KantoKittens.png')}
+          source={kantoKittensImage}
           style={styles.reactLogo}
         />
       }>
