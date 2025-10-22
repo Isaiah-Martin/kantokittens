@@ -8,6 +8,7 @@ export default defineConfig({
     tsconfigPaths(),
     alias({
       '@': path.resolve(__dirname, './'),
+      '@react-native-async-storage/async-storage': 'react',
       entries: [
             { find: '@expo/vector-icons', replacement: 'react' },
       ],
