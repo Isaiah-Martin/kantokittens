@@ -13,7 +13,7 @@ export default defineConfig({
   // This is the key change
   build: {
     rollupOptions: {
-      external: ['react-native', 'react-native-vector-icons', '../../components/parallax-scroll-view', '@expo/vector-icons', 'node_modules'],
+      external: ['react-native', 'react-native-vector-icons', '../../components/parallax-scroll-view', '../../node_modules/@xpo/vector-icons'],
     },
   },
 });
