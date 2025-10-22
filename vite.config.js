@@ -9,6 +9,7 @@ export default defineConfig({
     alias({
       '@': path.resolve(__dirname, './'),
       '@react-native-async-storage/async-storage': 'react',
+      'react-native': 'react-native-web',
       entries: [
             { find: '@expo/vector-icons', replacement: 'react' },
       ],
