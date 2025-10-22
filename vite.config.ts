@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     commonjs({
       // Ensure the commonjs plugin processes the expo modules
-      include: /node_modules/,
+      include: '/node_modules/',
     }),
     tsconfigPaths(),
   ],

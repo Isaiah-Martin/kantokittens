@@ -64,6 +64,7 @@
     "eslint": "^9.38.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.3",
+    "vite-plugin-react-native-web": "^2.3.0",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "private": true
