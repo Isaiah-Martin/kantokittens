@@ -1,7 +1,6 @@
 import ParallaxScrollView from "@../../components/parallax-scroll-view";
 import { ThemedText } from '@../../components/themed-text';
 import { ThemedView } from '@../../components/themed-view';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { validate as validateAgent } from 'email-validator';
 import { Image } from 'expo-image';
@@ -15,6 +14,7 @@ import { UserContext } from '../../components/Context';
 import { IconSymbol } from '../../components/ui/icon-symbol';
 import { DOMAIN_URL } from '../../lib/constants';
 import { User, UserContextType } from '../../lib/types';
+import AsyncStorage from '../../node_modules/@react-native-async-storage/async-storage/src';
 import { styles2 } from '../../styles/css';
 import { useNavigation } from '../../utils/hooks';
 

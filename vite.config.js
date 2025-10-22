@@ -4,16 +4,13 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
-  resolve: {
-    alias: {
+  plugins: [ react(), 
+    tsconfigPaths(),
+    alias({
       '@': path.resolve(__dirname, './'),
-    },
-  },
-  // This is the key change
-  build: {
-    rollupOptions: {
-      external: ['react-native', 'react-native-vector-icons', '../../components/parallax-scroll-view', '../../node_modules/@xpo/vector-icons'],
-    },
-  },
+      entries: [
+            { find: '@expo/vector-icons', replacement: 'react' },
+      ],
+    }),
+  ]
 });
