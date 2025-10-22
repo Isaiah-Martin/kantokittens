@@ -5,14 +5,15 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   plugins: [ react(), 
-    tsconfigPaths(),
-    alias({
+    tsconfigPaths()],
+  resolve: {
+    alias: {
       '@': path.resolve(__dirname, './'),
       '@react-native-async-storage/async-storage': 'react',
       'react-native': 'react-native-web',
       entries: [
             { find: '@expo/vector-icons', replacement: 'react' },
       ],
-    }),
-  ]
+    }
+  }
 });
