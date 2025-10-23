@@ -20,7 +20,7 @@ export default function TabLayout() {
           title: 'Home',
           tabBarActiveBackgroundColor: '#D98CBF',
           tabBarActiveTintColor: '#ffffff',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={'black'} />,
+          tabBarIcon: ({}) => <IconSymbol size={28} name="house.fill" color={'black'} />,
         }}
       />
 
@@ -29,7 +29,7 @@ export default function TabLayout() {
         options={{
           title: 'Book',
           tabBarActiveBackgroundColor: '#D98CBF',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="document.badge.clock" color={'black'} />,
+          tabBarIcon: ({ }) => <IconSymbol size={28} name="document.badge.clock" color={'black'} />,
         }}
       />
 
@@ -38,7 +38,7 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarActiveBackgroundColor: '#D98CBF',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="viewfinder" color={'black'} />,
+          tabBarIcon: ({ }) => <IconSymbol size={28} name="viewfinder" color={'black'} />,
         }}
       />
     </Tabs>

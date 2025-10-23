@@ -1,7 +1,6 @@
 import ParallaxScrollView from "@../../components/parallax-scroll-view";
 import { ThemedText } from '@../../components/themed-text';
 import { ThemedView } from '@../../components/themed-view';
-import kantoKittensImage from '@/assets/images/KantoKittens.png';
 import axios from 'axios';
 import { validate as validateAgent } from 'email-validator';
 import { Image } from 'expo-image';
@@ -11,6 +10,7 @@ import {
   StyleSheet
 } from 'react-native';
 import { MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import kantoKittensImage from '../../assets/images/KantoKittens.png';
 import { UserContext } from '../../components/Context';
 import { IconSymbol } from '../../components/ui/icon-symbol';
 import { DOMAIN_URL } from '../../lib/constants';

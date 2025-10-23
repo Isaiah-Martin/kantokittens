@@ -28,25 +28,25 @@ function LoginedStack() {
         name="Scheduler"
         component={BookingScreen}
         options={{ headerTitle: 'Appointment Scheduler',
-        tabBarIcon: ({color, size }) => <IconSymbol size={size} name="calendar" color={color} />,
+        tabBarIcon: ({ }) => <IconSymbol size={28} name="calendar" color={'black'} />,
       }} />
       <Tab.Screen
         name="Add"
         component={AddBooking}
         options={{ headerTitle: 'Add Activity',
-        tabBarIcon: ({color, size }) => <IconSymbol size={size} name="iphone.circle" color={color} />,
+        tabBarIcon: ({ }) => <IconSymbol size={28} name="iphone.circle" color={'black'} />,
       }} />
       <Tab.Screen
         name="Personal"
         component={UserInfo}
         options={{ headerTitle: 'Update My Personal Data',
-        tabBarIcon: ({color, size }) => <IconSymbol size={size} name="info" color={color} />,
+        tabBarIcon: ({ }) => <IconSymbol size={28} name="info" color={'black'} />,
       }} />
       <Tab.Screen 
         name="Logout" 
         component={LogoutScreen} 
         options={{ headerTitle: 'Logout', tabBarLabel: 'Logout',
-        tabBarIcon: ({color, size }) => <IconSymbol size={size} name="lock.rectangle" color={color} />,
+        tabBarIcon: ({ }) => <IconSymbol size={28} name="lock.rectangle" color={'black'} />,
       }} />
     </Tab.Navigator>
   );
