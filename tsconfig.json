@@ -4,6 +4,7 @@
     "strict": true,
     "baseUrl": ".",
     "types": ["vite/client"],
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"],
       "@/components/*": ["./components/*"]
