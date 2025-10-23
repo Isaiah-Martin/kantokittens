@@ -1,37 +1,24 @@
-import React, {useState, useRef, useContext} from 'react';
-import validator from 'email-validator';
-import passwordValidator from 'password-validator';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView, 
-         KeyboardAvoidingView, 
-         Platform, 
-         View, 
-         Text
+import { FirebaseError } from 'firebase/app';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  Text,
+  View
 } from 'react-native';
-import { Button, TextInput, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, TextInput } from 'react-native-paper';
+import { auth } from '../lib/firebase';
+import { addUser } from '../lib/firestore';
 import { styles2 } from '../styles/css';
-import { UserContext } from '../components/Context';
-import { DOMAIN_URL } from '../lib/constants';
-import {UserContextType} from '../lib/types';
 
 export default function UserJoin({ navigation }: { navigation: any}) {
-  const userContext: UserContextType = useContext(UserContext);
-  const initialState = {
-       name: '',
-       email: '',
-       password: '',
-  }
-  const [user, setUser] = useState(initialState);
+  const [user, setUser] = useState({ name: '', email: '', password: '' });
   const [password2, setPassWd2] = useState('');
   const [nameerr, setNameErr] = useState('');
-  const nameEl = useRef(null);
   const [emailerr, setEmailErr] = useState('');
-  const emailEl = useRef(null);
   const [passwderr, setPassWdErr] = useState('');
-  const passwdEl = useRef(null);
-  const passwd2El = useRef(null);
   const [inPost, setInPost] = useState(false);
 
   const theme = {
@@ -42,27 +29,22 @@ export default function UserJoin({ navigation }: { navigation: any}) {
     },
   };
   
-  // To get a specific color, access the `colors` property on the theme
   const primaryColor = theme.colors.primary;
 
   function changeName(text: string){
-    const value = text.replace(/<\/?[^>]*>/g, "");
-    setUser(prevState => ({ ...prevState, name: value }));
+    setUser(prevState => ({ ...prevState, name: text }));
   } 
 
   function changeEmail(text: string){
-    const value = text.trim().replace(/<\/?[^>]*>/g, "");
-    setUser(prevState => ({ ...prevState, email: value }));
+    setUser(prevState => ({ ...prevState, email: text }));
   } 
   
   function changePasswd(text: string){
-    const value = text.trim().replace(/<\/?[^>]*>/g, "");
-    setUser(prevState => ({ ...prevState, password: value }));
+    setUser(prevState => ({ ...prevState, password: text }));
   }
 
   function changePasswd2(text: string){
-    const value = text.trim().replace(/<\/?[^>]*>/g, "");
-    setPassWd2(value);
+    setPassWd2(text);
   }
 
   function resetErrMsg(){
@@ -72,78 +54,45 @@ export default function UserJoin({ navigation }: { navigation: any}) {
   }
 
   async function submitForm(){
-    //Reset all the err messages
-    resetErrMsg();	  
-    //Check if Name is filled
+    resetErrMsg();
     if (!user.name.trim()){
-      setUser(prevState => ({ ...prevState, name: user.name.trim() })) 
       setNameErr("Please type your name, this field is required!");
-      (nameEl.current as any).focus();
       return;
     }
-    //Check if Email is filled
     if (!user.email){
       setEmailErr("Please type your email, this field is required!");
-      (emailEl.current as any).focus();
       return;
     }
-    //Validate the email
-    if (!validator.validate(user.email)){
-      setEmailErr("This email is not validated OK, please enter a legal email.");
-      (emailEl.current as any).focus();
-      return;
-    }
-    //Check if Passwd is filled
-    if (!user.password || !password2){
-      setPassWdErr("Please type your password, this field is required!");
-      if (!user.password){
-        (passwdEl.current as any).focus();
-      }else{
-        (passwd2El.current as any).focus();
-      }
-      return;
-    }
-    //Check the passwords typed in the two fields are matched
-    if (user.password != password2){
-      setPassWdErr("Please retype your passwords, the passwords you typed in the two fields are not matched!");
-     (passwdEl.current as any).focus();
-      return;
-    }
- 
-    //Check the validity of password
-    let schema = new passwordValidator();
-    schema
-    .is().min(8)                                    // Minimum length 8
-    .is().max(100)                                  // Maximum length 100
-    .has().uppercase()                              // Must have uppercase letters
-    .has().lowercase()                              // Must have lowercase letters
-    .has().digits(2)                                // Must have at least 2 digits
-    .has().not().spaces();                          // Should not have spaces
-    if (!schema.validate(user.password)){
-      setPassWdErr("The password you typed is not enough secured, please retype a new one. The password must have both uppercase and lowercase letters as well as minimum 2 digits.");
-      (passwdEl.current as any).focus();
+    if (user.password !== password2){
+      setPassWdErr("Passwords do not match!");
       return;
     }
 
     setInPost(true);
-    const {data} = await axios.post(`${DOMAIN_URL}/api/adduser`, {...user, name: user.name.trim()});
-    setInPost(false);
-    if (data.duplicate_email){
-       setEmailErr("This email has been registered as a user, please use a different email to sign up.");
-       (emailEl.current as any).focus();
-       return;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
+      await addUser({ name: user.name, email: user.email });
+      setInPost(false);
+      navigation.navigate('Login');
+    } catch (error) {
+      setInPost(false);
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/email-already-in-use') {
+          setEmailErr('That email address is already in use!');
+        } else if (error.code === 'auth/invalid-email') {
+          setEmailErr('That email address is invalid!');
+        } else {
+          setPassWdErr(error.message)
+        }
+      } else {
+        setPassWdErr('An unexpected error occurred.');
+      }
     }
-    const {token, ...others} = data;
-    const userData = {...others, logintime: Math.round(new Date().getTime() / 1000)};
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
-    await SecureStore.setItemAsync('token', token);
-    userContext.login(userData);
-    setUser(initialState);
-    setPassWd2('');
   }
 
   function resetForm(){
-    setUser(initialState);
+    setUser({ name: '', email: '', password: '' });
+    setPassWd2('');
     resetErrMsg();
   }
 
@@ -154,7 +103,7 @@ export default function UserJoin({ navigation }: { navigation: any}) {
           style={styles2.container}>
           <View style={styles2.mainContainer}>
              <View style={styles2.itemCenter}>
-                <Text style={styles2.titleText}>Please Register</Text>
+                <Text style={styles2.titleText}>Join to Place Booking</Text>
              </View>
              <TextInput
                mode='outlined'
@@ -162,7 +111,6 @@ export default function UserJoin({ navigation }: { navigation: any}) {
                placeholder="Name*"
                value={user.name}
                onChangeText={text => changeName(text)}
-               ref={nameEl}
               />
              <Text style={{color: 'red'}}>{nameerr}</Text> 
              <TextInput
@@ -174,7 +122,6 @@ export default function UserJoin({ navigation }: { navigation: any}) {
                autoCapitalize="none"
                autoComplete="email"
                keyboardType="email-address"
-               ref={emailEl}
               />
              <Text style={{color: 'red'}}>{emailerr}</Text> 
              <TextInput
@@ -184,7 +131,6 @@ export default function UserJoin({ navigation }: { navigation: any}) {
                secureTextEntry={true}
                value={user.password}
                onChangeText={text => changePasswd(text)}
-               ref={passwdEl}
               />
              <Text style={{color: 'red'}}>{passwderr}</Text> 
              <TextInput
@@ -194,7 +140,6 @@ export default function UserJoin({ navigation }: { navigation: any}) {
                secureTextEntry={true}
                value={password2}
                onChangeText={text => changePasswd2(text)}
-               ref={passwd2El}
               />
               <View style={[styles2.itemLeft, {marginTop: 20}]}>
                  <Button mode="contained" style={{marginRight: 20}} onPress={() => submitForm()}>
