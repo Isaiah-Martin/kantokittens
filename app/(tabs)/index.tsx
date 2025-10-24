@@ -49,27 +49,19 @@ const { user, isLoggedIn, logout } = useAuth(); // Consume auth state from conte
           </ThemedText>
         </ThemedView>
           
-      <ThemedView style={styles.rowContainer}>
-        <ThemedView style={styles.stepContainer}>
+      <ThemedView style={styles2.statsRowContainerFluid}>
           <ThemedView style={styles2.statsBanner}>
             <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="cat.circle.fill" color={'black'}></IconSymbol></ThemedText>
             <ThemedText type="subtitle" style={styles.latoFont}>Cozy with Cats</ThemedText>
           </ThemedView>
-        </ThemedView>
-
-        <ThemedView style={styles.stepContainer}>
           <ThemedView style={styles2.statsBanner}>
             <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="0.square" color={'black'}></IconSymbol></ThemedText>
             <ThemedText type="subtitle" style={styles.latoFont}>Cafe Setting</ThemedText>
           </ThemedView>
-        </ThemedView>
-
-        <ThemedView style={styles.stepContainer}>
           <ThemedView style={styles2.statsBanner}>
             <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="0.circle" color={'black'}></IconSymbol></ThemedText>
             <ThemedText type="subtitle" style={styles.latoFont}>Community</ThemedText>
           </ThemedView>
-        </ThemedView>
       </ThemedView>
         </ParallaxScrollView>
       </AuthProvider>

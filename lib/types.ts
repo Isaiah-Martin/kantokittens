@@ -59,6 +59,7 @@ export interface Activity {
     meetingTargets: MeetingTarget[];
     sendConfirm: boolean;
     description: string;
+    created: string; // The Firestore timestamp as a string
 }
 
 export interface MeetingTarget {

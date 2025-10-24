@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import * as SecureStore from 'expo-secure-store';
 import { signOut } from 'firebase/auth';
 import * as React from 'react';
@@ -6,9 +7,11 @@ import { StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext'; // Use the custom hook
 import { auth } from '../lib/firebase';
+import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
 
+type LogoutScreenProps = BottomTabScreenProps<RootStackParamList, 'Logout'>;
 
-export default function LogoutScreen({ navigation }: { navigation: any}) {
+export default function LogoutScreen({ navigation, route }: LogoutScreenProps) {
   const { logout } = useAuth();
 
   const handleLogout = async () => {

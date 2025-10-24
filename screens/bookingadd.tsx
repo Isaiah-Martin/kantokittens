@@ -1,25 +1,26 @@
-import React, {useState, useRef, useContext, useCallback} from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
-import validator from 'email-validator';
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { SafeAreaView, 
-         View, 
-         Text,
-         Keyboard
+import { useFocusEffect } from '@react-navigation/native';
+import validator from 'email-validator';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  Keyboard,
+  SafeAreaView,
+  Text,
+  View
 } from 'react-native';
-import { Button, TextInput, Switch, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, Switch, TextInput } from 'react-native-paper';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../lib/firebase';
+import { Activity, MeetingTarget } from '../lib/types';
+import { getDateString, timezone } from '../lib/utils';
 import { styles2 } from '../styles/css';
-import { UserContext } from '../components/Context';
-import { timezone, getDateString } from '../lib/utils';
-import { DOMAIN_URL } from '../lib/constants';
-import {UserContextType, Activity, MeetingTarget} from '../lib/types';
+
 
 export default function AddSchedule({ navigation }: { navigation: any}) {
-  const userContext: UserContextType = useContext(UserContext);
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [titleerr, setTitleErr] = useState('');
   const titleEl = useRef(null);
@@ -52,10 +53,10 @@ export default function AddSchedule({ navigation }: { navigation: any}) {
 
 
   useFocusEffect(
-    useCallback(() => {
-      backToInitial();
-    }, [navigation])
-  );
+      useCallback(() => {
+        backToInitial();
+      }, [navigation])
+    );
   
   function backToInitial(){
     Keyboard.dismiss();
@@ -173,39 +174,65 @@ export default function AddSchedule({ navigation }: { navigation: any}) {
        setDatesErr("We can't set the appointment for the previous time.");
        return;
     }
-    if (meetingTargets.length > 0){
-       for (let i = 0; i < meetingTargets.length; i++) {
-           if (sendConfirm && meetingTargets[i].name.trim()){
-              //Check if Email is filled
-              if (!meetingTargets[i].email){
-                 handleSetErrDescr('You want to send confirmation email, please provide the email', i);
-                 return;
-              }
-           }
-           //Validate the email
-           if (meetingTargets[i].email && !validator.validate(meetingTargets[i].email)){
-              handleSetErrDescr('This email is not validated OK, please enter a legal email.', i);
-              return;
-           }
-       }
+    if (meetingTargets.length > 0) {
+      for (const [i, target] of meetingTargets.entries()) {
+        if (sendConfirm && target.name.trim() && !target.email) {
+          handleSetErrDescr('You want to send a confirmation email, please provide the email.', i);
+          return;
+        }
+        if (target.email && !validator.validate(target.email)) {
+          handleSetErrDescr('This email is not valid. Please enter a legal email.', i);
+          return;
+        }
+      }
     }
 
     sortOutMeetingTargets();
-    const dataObj = {title: title.trim(), startTime: startDate.getTime()/1000, endTime: endDate.getTime()/1000, meetingTargets, sendConfirm, description, timezone};
-    const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
-
     setInPost(true);
-    const {data} = await axios.post(`${DOMAIN_URL}/api/addschedule`, dataObj, { headers: headers });
-    setInPost(false);
-    const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
-    const schedule:  Activity[] = scheduleStore ? JSON.parse(scheduleStore): [];
-    schedule.push(data);
-    await AsyncStorage.setItem('schedule', JSON.stringify(schedule));
-    await AsyncStorage.setItem('schedule_recent', data.created);
-    navigation.navigate('Scheduler');
-  } 
+
+    try {
+      if (!user || !user.uid) {
+        throw new Error("User not authenticated.");
+      }
+
+      const newActivity = {
+        title: title.trim(),
+        startTime: startDate.getTime(),
+        endTime: endDate.getTime(),
+        meetingTargets,
+        sendConfirm,
+        description,
+        timezone,
+        ownerId: user.uid, // Tie the activity to the current user
+        created: serverTimestamp(), // Use Firestore server timestamp
+      };
+
+      const docRef = await addDoc(collection(db, 'activities'), newActivity);
+      
+      // Since addDoc generates a new document ID, we need to add it to the local state
+      const newActivityWithId = {
+        id: docRef.id,
+        ...newActivity,
+        created: new Date().toISOString(), // Use local time for immediate UI update
+      } as Activity;
+      // Update local AsyncStorage
+      const scheduleStore: string | null = await AsyncStorage.getItem(`schedule_${user.uid}`);
+      const schedule: Activity[] = scheduleStore ? JSON.parse(scheduleStore) : [];
+      schedule.push(newActivityWithId);
+      await AsyncStorage.setItem(`schedule_${user.uid}`, JSON.stringify(schedule));
+      await AsyncStorage.setItem(`schedule_recent_${user.uid}`, newActivityWithId.created);
+
+      navigation.navigate('Scheduler');
+
+    } catch (e) {
+      console.error(e);
+      // Handle error (e.g., show a toast)
+    } finally {
+      setInPost(false);
+    }
+  }; 
   
-  return (userContext &&
+  return (
     <SafeAreaView style={styles2.container}>
       <KeyboardAwareScrollView
         keyboardShouldPersistTaps='handled'

@@ -5,11 +5,13 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '../../context/AuthContext'; // Adjust path if needed
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+    <AuthProvider>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -44,5 +46,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </AuthProvider>
   );
 }

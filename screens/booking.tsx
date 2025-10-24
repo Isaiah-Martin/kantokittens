@@ -1,26 +1,26 @@
-import React, {useState, useEffect, useRef, useContext, useCallback} from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { SafeAreaView, 
-         KeyboardAvoidingView, 
-         Platform, 
-         ScrollView,
-         View, 
-         Text,
-         TouchableHighlight
+import { useFocusEffect } from '@react-navigation/native';
+import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
+import React, { useCallback, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableHighlight,
+  View
 } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Button, Switch } from 'react-native-paper';
-import { styles2 } from '../styles/css';
-import { UserContext } from '../components/Context';
-import { DOMAIN_URL } from '../lib/constants';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../lib/firebase'; // Ensure your db instance is imported correctly
+import { Activity, User, UserContextType } from '../lib/types';
 import { getDateString } from '../lib/utils';
-import {UserContextType, Activity, User} from '../lib/types';
+import { styles2 } from '../styles/css';
 
 export default function BookingScreen({ navigation, route }: { navigation: any; route: any}) {
-  const userContext: UserContextType = useContext(UserContext);
+  const userContext: UserContextType =  useAuth()
   const [initial, setInitial] = useState(true);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [currActivities, setCurrActivities] = useState<Activity[]>([]);
@@ -45,11 +45,11 @@ export default function BookingScreen({ navigation, route }: { navigation: any; 
     try {
       const userId = await AsyncStorage.getItem('schedule_userid') || '';
       let schedule: Activity[];
-      if (user.id && userId !== user.id){
+      if (user.uid && userId !== user.uid){
          await AsyncStorage.removeItem('schedule');
          await AsyncStorage.removeItem('schedule_recent');
          await AsyncStorage.removeItem('fetchtime');
-         await AsyncStorage.setItem('schedule_userid', user.id);
+         await AsyncStorage.setItem('schedule_userid', user.uid);
          schedule = [];
       }else{
          //Set activites from AsyncStorage.getItem('schedule')
@@ -69,74 +69,77 @@ export default function BookingScreen({ navigation, route }: { navigation: any; 
     }
   }
   
-  async function fetchSchedule(sch: Activity[], user: User){
+  async function fetchSchedule(sch: Activity[], user: User) {
     try {
-      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
-      const schedule_recent = await AsyncStorage.getItem('schedule_recent') || '';
-      const url = `${DOMAIN_URL}/api/getactivities?recent=${schedule_recent ? encodeURIComponent(schedule_recent): ''}`;
-      const {data} = await axios.get(url, { headers: headers });
-      if (data.no_authorization){
-        return; 
+      const userId = user.uid;
+      if (!userId) {
+        console.error("User ID is missing.");
+        return;
       }
-      const {result, removedact} = data;
-      if (!result.length && !removedact.length){
-         return; 
+      
+      // Get the timestamp of the last fetch from local storage
+      const scheduleRecent = await AsyncStorage.getItem(`schedule_recent_${userId}`) || '';
+
+      const activitiesRef = collection(db, 'activities');
+      let q;
+
+      if (scheduleRecent) {
+        // Query for activities that have been created or updated since the last fetch
+        q = query(
+          activitiesRef,
+          where('ownerId', '==', userId), // Assuming activities are tied to a user
+          where('created', '>', scheduleRecent),
+          orderBy('created') // Order by the created timestamp
+        );
+      } else {
+        // Fetch all activities for the user if it's the first time
+        q = query(
+          activitiesRef,
+          where('ownerId', '==', userId),
+          orderBy('created')
+        );
       }
-       
+
+      const querySnapshot = await getDocs(q);
+      const result: Activity[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        // Filter for active documents and get the data
+        if (!doc.data().removed) {
+          result.push({ id: doc.id, ...doc.data() } as Activity);
+        }
+      });
+
+      // Merge the new data with the existing data
+      let schdl = [...sch];
       let recent = '';
-      for (let item of result){
-          let idx = sch.findIndex((itm) => itm.id == item.id);
-          if (idx > -1){
-            sch[idx] = item;
-          }else{
-            sch.push(item);
-          }
-          recent = item.created;
+
+      for (const item of result) {
+        const idx = schdl.findIndex((itm) => itm.id === item.id);
+        if (idx > -1) {
+          schdl[idx] = item;
+        } else {
+          schdl.push(item);
+        }
+        recent = item.created;
       }
-      const schdl = sch.filter((item) => 
-          !removedact.includes(item.id)
-      );
-      setActivities(schdl);
-      await AsyncStorage.setItem('schedule', JSON.stringify(schdl));
-      if (recent){
-         await AsyncStorage.setItem('schedule_recent', recent);
+
+      // Update state and AsyncStorage
+      setActivities(schdl); // Assuming `setActivities` is a state setter function
+      await AsyncStorage.setItem(`schedule_${userId}`, JSON.stringify(schdl));
+
+      if (recent) {
+        await AsyncStorage.setItem(`schedule_recent_${userId}`, recent);
       }
+      
+      // Set a general fetch time
       const fetchTime = new Date().getTime() / 1000;
-      await AsyncStorage.setItem('fetchtime', fetchTime.toString());
-    }catch(e){
+      await AsyncStorage.setItem(`fetchtime_${userId}`, fetchTime.toString());
+
+    } catch (e) {
       console.error(e);
     }
   }
-
-  useEffect(() => {
-    if (activities.length > 0){
-      const startDateTime = startDate.getTime() / 1000;
-      const endDateTime = (endDate.getTime() + 1) / 1000;
-      const selectedAct = activities.filter((item) => 
-         (item.startTime > startDateTime && item.endTime < endDateTime) || 
-         (item.startTime == startDateTime && item.endTime == endDateTime) || 
-         (item.startTime <= startDateTime && item.endTime >= endDateTime) || 
-         (item.startTime < startDateTime && item.endTime < endDateTime && item.endTime > startDateTime) || 
-         (item.startTime > startDateTime && item.startTime < endDateTime && item.endTime > endDateTime)
-      ).sort(function(a, b): number {
-         if (a.startTime > b.startTime) {return 1}
-         else if(a.startTime == b.startTime){return 0}
-         else{return -1};
-      });
-      setCurrActivities(selectedAct);
-      
-      if (initial){
-         if (!selectedAct.length){
-            setSelectRange(true);
-            const endDateTime = new Date(endDate.getTime());
-            endDateTime.setMonth(endDateTime.getMonth()+1);
-            setEndDate(endDateTime);
-         }
-         setInitial(false);   
-      }
-    }
-    
-  },[startDate, endDate, activities]);
 
   function changeSelectRange(value: boolean){
      if (value){

@@ -1,30 +1,27 @@
-import React, {useState, useRef, useContext, useCallback} from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { updatePassword, updateProfile } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
 import passwordValidator from 'password-validator';
-import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView, 
-         KeyboardAvoidingView, 
-         Platform, 
-         ScrollView,
-         View, 
-         Text
-} from 'react-native';
-import { Button, TextInput, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import React, { useCallback, useRef, useState } from 'react';
+import { TextInput as RNTextInput, SafeAreaView, Text, View } from 'react-native';
+import { Button, MD3LightTheme as DefaultTheme, TextInput as PaperTextInput } from 'react-native-paper';
+import { useAuth } from '../context/AuthContext';
+import { auth, db } from '../lib/firebase';
+import { User } from '../lib/types'; // Import your User type
+import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming your param list type
 import { styles2 } from '../styles/css';
-import { UserContext } from '../components/Context';
-import { DOMAIN_URL } from '../lib/constants';
-import {UserContextType} from '../lib/types';
 
-export default function UserInfo({ navigation }: { navigation: any;}) {
-    const userContext: UserContextType = useContext(UserContext);
+type UserInfoScreenProps = NativeStackScreenProps<RootStackParamList, 'UserInfo'>;
+
+export default function UserInfo({ navigation }: { navigation: any}) {
+    const { user, loading, login } = useAuth(); // Get user and login from context
     const [name, setName] = useState<string>('');
-    const [nameerr, setNameErr] = useState<string>('');
-    const nameEl = useRef(null);
+    const [nameErr, setNameErr] = useState<string>('');
+    const nameEl = useRef<RNTextInput | null>(null);
     const [passwd, setPasswd] = useState('');
-    const [passwderr, setPasswdErr] = useState('');
-    const passwdEl = useRef(null);
+    const [passwdErr, setPasswdErr] = useState('');
+    const passwdEl = useRef<RNTextInput | null>(null);
     const [updateName, setUpdateName] = useState(false);
     const [updatePasswd, setUpdatePasswd] = useState(false);
     const [inPost, setInPost] = useState(false);
@@ -37,16 +34,16 @@ export default function UserInfo({ navigation }: { navigation: any;}) {
       },
     };
 
-    // To get a specific color, access the `colors` property on the theme
-    const primaryColor = theme.colors.primary;
-
     useFocusEffect(
       useCallback(() => {
         backToInitial();
-      }, [navigation])
+        if (user) {
+          setName(user.name || ''); // Initialize name state from context user
+        }
+      }, [user]) // Re-run if user changes
     );
 
-    function backToInitial(){
+    function backToInitial() {
       setName('');
       setNameErr('');
       setPasswd('');
@@ -56,147 +53,137 @@ export default function UserInfo({ navigation }: { navigation: any;}) {
       setInPost(false);
     }
 
-    async function submitNameUpdate(){
+    async function submitNameUpdate() {
+      if (!user || inPost) return;
+
       setNameErr('');
-      //Check if Name is filled
-      if (!name.trim()){
+      if (!name.trim()) {
          setNameErr("Please type your name, this field is required!");
-         (nameEl.current as any).focus();
+         nameEl.current?.focus();
          return;
+      }
+
+      if (!auth.currentUser) {
+        setNameErr("Not authenticated. Please log in again.");
+        return;
       }
       
-      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
       setInPost(true);
-      const {data} = await axios.put(`${DOMAIN_URL}/api/updateuser`, {name: name.trim()}, { headers: headers });
-      setInPost(false);
-      if (data.no_authorization){
-          setNameErr("No authorization to update");
-          (nameEl.current as any).focus();
-          return;
-      }
+      try {
+        if (!auth.currentUser || !user.uid) { // <-- Explicitly check for user.uid
+            throw new Error("Not authenticated or UID is missing.");
+        }
+        // Update Firebase Auth display name
+        await updateProfile(auth.currentUser!, { displayName: name.trim() });
         
-      const user = {...userContext.user, name: name};
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      userContext.login(user);
-      setUpdateName(false);
+        // Update Firestore document
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, { name: name.trim() });
+        
+        //  Update Firebase Auth display name
+        await updateProfile(auth.currentUser, { displayName: name.trim() });
+
+        // Update context with new user data
+        const updatedUser = { ...user, name: name.trim() } as User;
+        if(updatedUser.password){
+          await login(updatedUser.name, updatedUser.password); // Assuming login function updates context user state
+        }
+        setUpdateName(false);
+        
+      } catch (error) {
+        console.error("Error updating name:", error);
+        setNameErr("Failed to update name. Please try again.");
+      } finally {
+        setInPost(false);
+      }
     }
 
-    async function submitPasswdUpdate(){
+    async function submitPasswdUpdate() {
+      if (!user || inPost) return;
+
       setPasswdErr('');
-      //Check if Passwd is filled
-      if (!passwd){
+      if (!passwd) {
          setPasswdErr("Please type your password, this field is required!");
-         (passwdEl.current as any).focus();
+         passwdEl.current?.focus();
          return;
       }
 
-      //Check the validity of password
       let schema = new passwordValidator();
       schema
-      .is().min(8)                                    // Minimum length 8
-      .is().max(100)                                  // Maximum length 100
-      .has().uppercase()                              // Must have uppercase letters
-      .has().lowercase()                              // Must have lowercase letters
-      .has().digits(2)                                // Must have at least 2 digits
-      .has().not().spaces();                          // Should not have spaces
-      if (!schema.validate(passwd)){
-          setPasswdErr("The password you typed is not enough secured, please retype a new one. The password must have both uppercase and lowercase letters as well as minimum 2 digits.");
-          (passwdEl.current as any).focus();
+      .is().min(8)
+      .is().max(100)
+      .has().uppercase()
+      .has().lowercase()
+      .has().digits(2)
+      .has().not().spaces();
+
+      if (!schema.validate(passwd)) {
+          setPasswdErr("The password you typed is not secured enough. It must have both uppercase and lowercase letters and a minimum of 2 digits.");
+          passwdEl.current?.focus();
           return;
       }
       
-      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
       setInPost(true);
-      const {data} = await axios.put(`${DOMAIN_URL}/api/updateuser`, {password: passwd}, { headers: headers });
-      setInPost(false);
-      if (data.no_authorization){
-          setPasswdErr("No authorization to update");
-          (passwdEl.current as any).focus();
-          return;
+      try {
+        // Update Firebase Auth password
+        await updatePassword(auth.currentUser!, passwd);
+        setUpdatePasswd(false);
+      } catch (error) {
+        console.error("Error updating password:", error);
+        setPasswdErr("Failed to update password. Please try again.");
+      } finally {
+        setInPost(false);
       }
-      setUpdatePasswd(false);
     }
   
-    return (userContext &&
+    if (!user) {
+      // Handle case where user is not logged in
+      return <Text>User not logged in.</Text>;
+    }
+
+    return (
      <SafeAreaView style={styles2.container}>
-        <KeyboardAvoidingView  
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles2.container}>
-            <ScrollView style={styles2.scrollView}>
-               <View style={styles2.listItem}>
-                  {!updateName &&
-                  <>
-                    <Text style={styles2.subjectText}>
-                      Name: {userContext.user.name}  
-                    </Text> 
-                    <Button mode="contained" onPress={() => {{setUpdateName(true); setName(userContext.user.name as string);}}}>
-                        Update Name
-                     </Button>
-                  </>
-                  }
-                  {updateName &&
-                  <>
-                    <TextInput
-                      mode='outlined'
-                      label="Name"
-                      placeholder="Name"
-                      value={name}
-                      onChangeText={text => setName(text.replace(/<\/?[^>]*>/g, ""))}
-                      ref={nameEl}
-                      />
-                    <Text style={{color: 'red'}}>{nameerr}</Text> 
-                    <View style={styles2.itemLeft}>
-                      <Button mode="contained"  style={{marginRight: 20}} onPress={() => submitNameUpdate()}>
-                        Go Update Name
-                      </Button>
-                      <Button mode="contained"  style={{marginRight: 20}} onPress={() => {setName(userContext.user.name as string);setNameErr('');}}>
-                        Reset
-                      </Button>
-                    </View>
-                  </>
-                  }
-               </View>
-               <View style={styles2.listItem}>
-                  {!updatePasswd &&
-                  <>
-                    <Text style={styles2.subjectText}>
-                     Password 
-                    </Text> 
-                    <Button mode="contained" onPress={() => setUpdatePasswd(true)}>
-                        Update Password
-                    </Button>
-                  </>
-                  }
-                  {updatePasswd &&
-                  <>
-                    <TextInput
-                      mode='outlined'
-                      label='Password'
-                      placeholder='Password'
-                      secureTextEntry={true}
-                      value={passwd}
-                      onChangeText={text => setPasswd(text.replace(/<\/?[^>]*>/g, "").trim())}
-                      ref={passwdEl}
-                      />
-                    <Text style={{color: 'red'}}>{passwderr}</Text> 
-                    <View style={styles2.itemLeft}>
-                      <Button mode="contained"  style={{marginRight: 20}} onPress={() => submitPasswdUpdate()}>
-                        Go Update Password
-                      </Button>
-                      <Button mode="contained"  style={{marginRight: 20}} onPress={() => {setPasswd('');setPasswdErr('');}}>
-                        Reset
-                      </Button>
-                    </View>
-                  </>
-                  }
-               </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
-        {inPost &&
-        <View style={styles2.loading}>
-            <ActivityIndicator size="large" animating={true} color={primaryColor} />
-        </View>
-        }
+       <View style={styles2.loginMain}>
+         {/* Name Update Section */}
+         <Text>Current Name: {user.name}</Text>
+         {!updateName ? (
+           <Button onPress={() => setUpdateName(true)}>Update Name</Button>
+         ) : (
+           <View>
+             <PaperTextInput
+               label="New Name"
+               value={name}
+               onChangeText={setName}
+               error={!!nameErr}
+               style={styles2.input}
+               ref={nameEl}
+             />
+             {!!nameErr && <Text style={styles2.errorText}>{nameErr}</Text>}
+             <Button onPress={submitNameUpdate} disabled={inPost} loading={inPost}>Save</Button>
+             <Button onPress={() => setUpdateName(false)}>Cancel</Button>
+           </View>
+         )}
+
+         {/* Password Update Section */}
+         {!updatePasswd ? (
+           <Button onPress={() => setUpdatePasswd(true)}>Update Password</Button>
+         ) : (
+           <View>
+             <PaperTextInput
+               label="New Password"
+               value={passwd}
+               onChangeText={setPasswd}
+               secureTextEntry
+               error={!!passwdErr}
+               style={styles2.input}
+               ref={passwdEl}
+             />
+             {!!passwdErr && <Text style={styles2.errorText}>{passwdErr}</Text>}
+             <Button onPress={submitPasswdUpdate} disabled={inPost} loading={inPost}>Save</Button>
+             <Button onPress={() => setUpdatePasswd(false)}>Cancel</Button>
+           </View>
+         )}
+       </View>
      </SafeAreaView>
-  );
+    );
 }

@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import 'react-native-gesture-handler';
@@ -109,9 +108,5 @@ export const AppNavigator = () => {
     return null;
   }
 
-  return (
-     <NavigationContainer>
-        {isLoggedIn ? <AppTabsScreen /> : <AuthStackScreen />}
-      </NavigationContainer>
-  );
+  return isLoggedIn ? <AppTabsScreen /> : <AuthStackScreen />;
 };
