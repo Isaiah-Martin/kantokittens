@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ScrollView,
   Text,
   View
 } from 'react-native';
@@ -101,6 +102,8 @@ export default function UserJoin({ navigation }: { navigation: any}) {
       <KeyboardAvoidingView  
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles2.container}>
+            <ScrollView contentContainerStyle={styles2.container}>
+          <View style={styles2.loginMain}></View>
           <View style={styles2.mainContainer}>
              <View style={styles2.itemCenter}>
                 <Text style={styles2.titleText}>Join to Place Booking</Text>
@@ -153,6 +156,7 @@ export default function UserJoin({ navigation }: { navigation: any}) {
                  </Button>
               </View>
           </View>
+           </ScrollView>
       </KeyboardAvoidingView>
       {inPost &&
         <View style={styles2.loading}>

@@ -4,7 +4,8 @@ export const styles2 = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#D98CBF',
-    padding: 20,
+    padding: 10,
+    width: '100%',
   },
   loginMain: {
     padding: 16,
@@ -34,8 +35,8 @@ export const styles2 = StyleSheet.create({
   mainContainer: {
       flex: 1, 
       justifyContent: 'center', 
-      paddingBottom: 50, 
-      paddingHorizontal: 5
+      paddingBottom: 10, 
+      paddingHorizontal: 5,
   }, 
   scrollView: {
     paddingTop: 10,

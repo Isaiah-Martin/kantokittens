@@ -4,10 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import 'react-native-gesture-handler';
 import { useAuth } from '../../context/AuthContext'; // Use the custom hook
-
 import BookingScreen from '../../screens/booking';
 import AddBooking from '../../screens/bookingadd';
 import ForgotPasswd from '../../screens/forgotpasswd';
+import LoadingScreen from '../../screens/loading';
 import LoginScreen from '../../screens/login';
 import LogoutScreen from '../../screens/logout';
 import UserJoin from '../../screens/useradd';
@@ -41,17 +41,17 @@ const AuthStackScreen = () => (
       <AuthStack.Screen 
           name="Login" 
           component={LoginScreen} 
-          options={{ title: 'Book a Session With Us' }}
+          options={{ title: 'Login and Book Session' }}
           />
       <AuthStack.Screen 
           name="UserJoin" 
           component={UserJoin} 
-          options={{ title: 'Book a Session With Us' }}
+          options={{ title: 'Join and Book Session' }}
           />
       <AuthStack.Screen 
           name="ForgotPasswd" 
           component={ForgotPasswd} 
-          options={{ title: 'Book a Session With Us' }}
+          options={{ title: 'Send Reset Password Email' }}
           />
       </AuthStack.Group> 
   </AuthStack.Navigator>
@@ -103,9 +103,7 @@ export const AppNavigator = () => {
   const { isLoggedIn, loading } = useAuth();
 
   if (loading) {
-    // You could return a loading indicator here
-    // return <LoadingScreen />;
-    return null;
+    return <LoadingScreen />;
   }
 
   return isLoggedIn ? <AppTabsScreen /> : <AuthStackScreen />;

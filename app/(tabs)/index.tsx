@@ -40,28 +40,21 @@ const { user, isLoggedIn, logout } = useAuth(); // Consume auth state from conte
       </ThemedView>
       
         <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle" style={styles.latoFont}>A Curated Cat Lounge on the Upper East Side</ThemedText>
           <ThemedText type="defaultSemiBold" style={styles.latoFont2}>
-          Warm cafe where Filipino-inspired drinks and small plates meet a serene cat lounge filled with adoptable rescue cats.
-          </ThemedText>
-          <ThemedText type="defaultSemiBold" style={styles.latoFont2}>
-          Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave with a deeper connection to community and animals.
+          Filipino-inspired drinks meet a serene cat lounge filled with adoptable rescue cats.
           </ThemedText>
         </ThemedView>
           
       <ThemedView style={styles2.statsRowContainerFluid}>
           <ThemedView style={styles2.statsBanner}>
-            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="cat.circle.fill" color={'black'}></IconSymbol></ThemedText>
-            <ThemedText type="subtitle" style={styles.latoFont}>Cozy with Cats</ThemedText>
-          </ThemedView>
+            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={35} name="cat.circle.fill" color={'black'}></IconSymbol></ThemedText>
+            </ThemedView>
           <ThemedView style={styles2.statsBanner}>
-            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="0.square" color={'black'}></IconSymbol></ThemedText>
-            <ThemedText type="subtitle" style={styles.latoFont}>Cafe Setting</ThemedText>
-          </ThemedView>
+            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={35} name="mug.fill" color={'black'}></IconSymbol></ThemedText>
+             </ThemedView>
           <ThemedView style={styles2.statsBanner}>
-            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={28} name="0.circle" color={'black'}></IconSymbol></ThemedText>
-            <ThemedText type="subtitle" style={styles.latoFont}>Community</ThemedText>
-          </ThemedView>
+            <ThemedText type="subtitle" style={styles.latoFont}><IconSymbol size={35} name="rectangle.3.group.bubble.fill" color={'black'}></IconSymbol></ThemedText>
+             </ThemedView>
       </ThemedView>
         </ParallaxScrollView>
       </AuthProvider>
@@ -102,5 +95,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+    padding: 0,
+    margin: 0,
   },
 });

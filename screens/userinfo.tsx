@@ -73,6 +73,11 @@ export default function UserInfo({ navigation }: { navigation: any}) {
         if (!auth.currentUser || !user.uid) { // <-- Explicitly check for user.uid
             throw new Error("Not authenticated or UID is missing.");
         }
+
+        if (!user.uid) { // <-- Ensure UID is not empty
+            throw new Error("User ID is missing.");
+        }
+
         // Update Firebase Auth display name
         await updateProfile(auth.currentUser!, { displayName: name.trim() });
         

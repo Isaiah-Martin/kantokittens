@@ -1,19 +1,23 @@
+import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import validator from 'email-validator';
 import React, { useRef, useState } from 'react';
 import {
+  Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
   TextInput as RNTextInput,
   SafeAreaView,
+  StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import { ActivityIndicator, Button, MD3LightTheme, TextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { secureLogin } from '../lib/firestore';
 import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
 import { styles2 } from '../styles/css';
+const { width: screenWidth } = Dimensions.get('window');
 
 // Define the component's props using NativeStackScreenProps
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
@@ -59,20 +63,22 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setPassWdErr('');
     setInPost(true);
 
-    if (!validator.validate(email)) {
+    if (!validator.validate(user.email)) {
       setEmailErr('Please provide a valid email');
       setInPost(false);
       return;
     }
 
-    if (!password) {
+    if (!user.password) {
       setPassWdErr('Password cannot be empty');
       setInPost(false);
       return;
     }
 
     try {
-      const firestoreUser = await secureLogin(user.email, user.password);
+      // Call the login function from the AuthContext with local state variables
+      login(user.email,user.password); 
+      // The AuthContext will handle state updates and the AppNavigator will handle navigation automatically
     } catch (error) {
       console.error(error);
       setPassWdErr('Invalid email or password');
@@ -92,7 +98,13 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   }
 
   return (
-    <SafeAreaView style={styles2.container}>
+    <ParallaxScrollView
+          headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
+          headerImage={
+    <Image source={require('@/assets/images/KantoKittens.png')} style={styles.reactLogo} />
+  }
+          >
+          <SafeAreaView style={styles2.container}>
       <KeyboardAvoidingView  
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles2.container}>
@@ -111,7 +123,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                keyboardType="email-address"
                ref={emailEl}
               />
-             <Text style={{color: primaryColor}}>{emailErr}</Text> 
+             <Text style={{color: 'white'}}>{emailErr}</Text> 
              <TextInput
                mode='outlined'
                label='Password'
@@ -121,20 +133,20 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                onChangeText={text => changePasswd(text)}
                ref={passwdEl}
               />
-             <Text style={{color: primaryColor}}>{passwdErr}</Text> 
+             <Text style={{color: 'white'}}>{passwdErr}</Text> 
              <View style={styles2.itemCenter}>
                 <Button mode="text" uppercase={false} onPress={() => navigation.navigate('ForgotPasswd', {userEmail: user.email})}>
                    Forgot Password?
                  </Button>
               </View>
-              <View style={[styles2.itemLeft, {marginTop: 15}]}>
-                 <Button mode="contained" style={{marginRight: 20, backgroundColor: primaryColor}} onPress={() => handleLogin()}>
+              <View style={[styles2.itemLeft]}>
+                 <Button mode="contained" style={[ styles.button ]} labelStyle={styles.buttonText} onPress={() => handleLogin()}>
                    Log In
                  </Button>
-                 <Button mode="contained" style={{marginRight: 20, backgroundColor: primaryColor}} onPress={() => resetForm()}>
+                 <Button mode="contained" style={[ styles.button ]} labelStyle={styles.buttonText} onPress={() => resetForm()}>
                    Reset
                  </Button>
-                 <Button mode="outlined" style={{marginRight: 20, backgroundColor: primaryColor}} onPress={() => navigation.navigate('UserJoin')}>
+                 <Button mode="outlined" style={[ styles.button ]} labelStyle={styles.buttonText}onPress={() => navigation.navigate('UserJoin')}>
                    Sign Up
                  </Button>
               </View>
@@ -146,5 +158,23 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         </View>
       }
     </SafeAreaView>
+            </ParallaxScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  reactLogo: {
+    // Example: set a fixed aspect ratio and a flexible width
+    width: '100%', // 80% of screen width
+    height: '100%',
+    aspectRatio: 1, // Assumes a square image
+    // If you need a specific ratio, e.g., 16:9, use: aspectRatio: 16 / 9,
+  },
+  button: {
+    backgroundColor: 'black'
+  },
+  buttonText: {
+    color: '#D98CBF',
+    tintColor: '#D98CBF'
+  }
+});
