@@ -34,11 +34,21 @@ export interface UserData {
 }
 
 export interface User {
-    id?: string;
-    email?: string;
-    name?: string;
-    token?: string;
-    logintime?: number;
+  uid?: string;
+  email: string;
+  password?: string;
+  logintime?: number;
+  name: string;
+  // Add any other properties your user object has
+}
+
+// This interface defines the contract for your context value
+export interface UserContextType {
+isLoggedIn: boolean;
+user: User | null | undefined; // <-- Important: user can be null
+login: (email: string, password: string) => Promise<void> | void;
+logout: () => Promise<void> | void;
+loading: boolean;
 }
 
 export interface Activity {
@@ -68,13 +78,6 @@ export type ActivityDetail = Activity & ActivityUser;
 export interface Activities {
     result: Activity[];
     removedact: string[];
-}
-
-export interface UserContextType {
-    isLoggedIn: boolean; 
-    user: User; 
-    login: (user?: User) => void; 
-    logout: () => void;
 }
 
 export interface UserUpdate{

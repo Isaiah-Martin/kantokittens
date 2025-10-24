@@ -1,67 +1,20 @@
-import { Image } from 'expo-image';
-import validator from 'email-validator';
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { UserContext } from '../../components/Context';
-import {NavigationContainer, useNavigation as _useNavigation} from '@react-navigation/native';
-import { SafeAreaView, 
-         KeyboardAvoidingView, 
-         Platform, 
-         View, 
-         Text,
-         StyleSheet
-} from 'react-native';
-import { styles2 } from '../../styles/css';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Button, TextInput, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
-import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {UserContextType, User} from '../../lib/types';
-import { DOMAIN_URL } from '../../lib/constants';
-import AppStack from '../../navigation/AppStack';
-import {useNavigation} from '../../utils/hooks';
-import Navigation from './Navigation';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Image } from 'expo-image';
+import React from 'react';
+import {
+  StyleSheet
+} from 'react-native';
+import { MD3LightTheme as DefaultTheme } from 'react-native-paper';
+import { AuthProvider, useAuth } from '../../context/AuthContext'; // Adjust path if needed
+import { styles2 } from '../../styles/css';
+import { AppNavigator } from './Navigation'; // Assuming this is your root navigator
 
 export default function HomeScreen({ navigation }: { navigation: any}) {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [userData, setUserData] = useState<User>({});
-  const initialState = {
-      email: '',
-      password: ''
-  };
-  const [user, setUser] = useState(initialState);
-  const [emailerr, setEmailErr] = useState('');
-  const emailEl = useRef(null);
-  const [passwderr, setPassWdErr] = useState('');
-  const passwdEl = useRef(null);
-  const [inPost, setInPost] = useState(false);
+const { user, isLoggedIn, logout } = useAuth(); // Consume auth state from context
 
-  const navigation2 = useNavigation();
-
-  const login = (user?: User) => {
-    if (user){
-      setUserData(user);
-      if (user.id){
-        setLoggedIn(true);
-      }
-    }
-  };
- 
-  const logout = () => {
-    setLoggedIn(false);
-    setUserData({});
-  };
-  
-  const userContext: UserContextType = {
-    isLoggedIn: loggedIn, 
-    user: userData, 
-    login: login, 
-    logout: logout
-  };
 
   const theme = {
     ...DefaultTheme,
@@ -70,110 +23,10 @@ export default function HomeScreen({ navigation }: { navigation: any}) {
        primary: '#D98CBF',
     }
    };
-    
-        // To get a specific color, access the `colors` property on the theme
-        const primaryColor = theme.colors.primary;
-
-  function changeEmail(text: string){
-    const value = text.trim().replace(/<\/?[^>]*>/g, "");
-    setUser(prevState => ({ ...prevState, email: value }));
-  } 
-
-  function changePasswd(text: string){
-    const value = text.trim().replace(/<\/?[^>]*>/g, "");
-    setUser(prevState => ({ ...prevState, password: value }));
-  }
-  
-  function resetErrMsg(){
-    setEmailErr('');
-    setPassWdErr('');
-  }
-
-  async function submitForm(){
-    //Reset all the err messages
-    resetErrMsg();
-    //Check if Email is filled
-    if (!user.email){
-       setEmailErr("Please type your email, this field is required!");
-       (emailEl.current as any).focus();
-       return;
-    }
-    //Validate the email
-    if (!validator.validate(user.email)){
-        setEmailErr("This email is not a legal email.");
-        (emailEl.current as any).focus();
-        return;
-    }
-    //Check if Passwd is filled
-    if (!user.password){
-        setPassWdErr("Please type your password, this field is required!");
-        (passwdEl.current as any).focus();
-        return;
-    }
-
-    setInPost(true);
-    const data = null;
-    try {
-      const { data } = await axios.post(`${DOMAIN_URL}/api/login`, user);
-      setInPost(false);
-
-      if (data.no_account){
-        setEmailErr("Sorry, we can't find this account.");
-        (emailEl.current as any).focus();
-        return;
-      }
-      if (data.password_error){
-          setPassWdErr("Password error");
-          (passwdEl.current as any).focus();
-          return;
-      }
-      const {token, ...others} = data;
-
-      const userData = {...others, logintime: Math.round(new Date().getTime() / 1000)};
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await SecureStore.setItemAsync('token', token);
-      userContext.login(userData);
-      setUser(initialState);
-    } catch (error) {
-      setInPost(false);
-      console.error('API call failed:', error);
-    }
-  }
-
-  function resetForm(){
-    setUser(initialState);
-    resetErrMsg();
-  }
-
-  useEffect(() => {
-    async function fetchUserData() {
-      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
-      const { data } = await axios.get(`${DOMAIN_URL}/api/getselfdetail`, { headers: headers });
-      const {token, ...others} = data;
-      const userData = {...others, logintime: Math.round(new Date().getTime() / 1000)};
-      setUserData(userData);
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await SecureStore.setItemAsync('token', token);
-    }
-    
-    async function fetchData(){
-       const user = await AsyncStorage.getItem('user');
-       const userData = user ? JSON.parse(user): {};
-       setUserData(userData);
-       if (userData.id){
-          setLoggedIn(true);
- 
-          const logintime = userData.logintime || 0;
-          const currTime = Math.round(new Date().getTime() / 1000);
-          if (currTime > (logintime + 60 * 60 * 24 * 10)){
-             fetchUserData();
-          }
-       }
-     }
-     fetchData();
-  },[]);
 
   return (
+    <AuthProvider>
+      <AppNavigator />
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
       headerImage={
@@ -218,9 +71,8 @@ export default function HomeScreen({ navigation }: { navigation: any}) {
           </ThemedView>
         </ThemedView>
       </ThemedView>
-        <UserContext.Provider value={userContext}>
-        </UserContext.Provider>
         </ParallaxScrollView>
+      </AuthProvider>
   );
 }
 
@@ -237,6 +89,7 @@ const styles = StyleSheet.create({
   rowContainer: {
     flexDirection: 'row',
     flex: 1, // Allows the container to take full height
+    width: 1
   },
   latoFont: {
     fontFamily: 'Lato',

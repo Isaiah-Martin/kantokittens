@@ -16,6 +16,7 @@ export type RootStackParamList = {
   AddBooking: undefined;
   UserInfo: undefined;
   LogoutScreen: undefined;
+  LoginScreen: undefined;
   ActivityDetail: undefined;
   LoginedStack: undefined;
   Login: undefined;

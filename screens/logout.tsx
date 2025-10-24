@@ -1,48 +1,38 @@
-import * as React from 'react';
-import { useCallback, useContext } from 'react';
-import { useFocusEffect, CommonActions } from '@react-navigation/native';
-import { View, StyleSheet } from 'react-native';
-import { Button } from 'react-native-paper';
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {UserContext} from '../components/Context';
-import {UserContextType} from '../lib/types';
+import * as SecureStore from 'expo-secure-store';
+import { signOut } from 'firebase/auth';
+import * as React from 'react';
+import { StyleSheet } from 'react-native';
+import { Button } from 'react-native-paper';
+import { useAuth } from '../context/AuthContext'; // Use the custom hook
+import { auth } from '../lib/firebase';
+
 
 export default function LogoutScreen({ navigation }: { navigation: any}) {
-  const userContext: UserContextType = useContext(UserContext);
+  const { logout } = useAuth();
 
-  useFocusEffect(
-    useCallback(() => {
-      if (userContext){
-          removeData();
+  const handleLogout = async () => {
+    try {
+      // Sign out from Firebase Authentication
+      await signOut(auth);
+
+      // Clear the user in your context
+      logout(); // The logout function in your context should set the user to undefined
+
+      // Clear stored data (optional, but good practice)
+      await AsyncStorage.removeItem('user');
+      await SecureStore.deleteItemAsync('token');
+
+      } catch (error) {
+      console.error('Logout failed:', error);
       }
-    }, [navigation, userContext])
-  );
- 
-  async function removeData() {
-    navigation.dispatch((state: any) => {
-      // Remove all the routes except for Logout from the stack
-      const routes = state.routes.filter((r: any) => r.name === 'Logout');
-    
-      return CommonActions.reset({
-        ...state,
-        routes,
-        index: routes.length - 1,
-      });
-    });  
-    
-    await AsyncStorage.removeItem('user');
-    await SecureStore.deleteItemAsync('token');
-    userContext.logout();
-  }
+    };
 
-  return (userContext &&
-    <View style={[styles.container,{padding: 10}]}>
-        <Button mode="contained" onPress={() => {removeData();}}>
-          Log Out
+    return (
+        <Button onPress={handleLogout}>
+            Logout
         </Button>
-    </View>
-  );
+    );
 }
 
 const styles = StyleSheet.create({
