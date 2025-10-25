@@ -1,4 +1,5 @@
 import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { secureLogin } from '@/lib/firestore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import validator from 'email-validator';
 import React, { useRef, useState } from 'react';
@@ -19,15 +20,14 @@ import { RootStackParamList } from '../navigation/RootStackParamList'; // Assumi
 import { styles2 } from '../styles/css';
 const { width: screenWidth } = Dimensions.get('window');
 
-// Define the component's props using NativeStackScreenProps
-type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'LoginScreen'>;
 
-export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const { login, loading } = useAuth();
+export default function LoginScreen({route, navigation}: { route: any, navigation: LoginScreenProps}) {
+ const { login, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailErr, setEmailErr] = useState('');
-  const [passwdErr, setPassWdErr] = useState('');
+  const [passwdErr, setPasswdErr] = useState('');
   const [inPost, setInPost] = useState(false);
   const emailEl = useRef<RNTextInput | null>(null);
   const passwdEl = useRef<RNTextInput | null>(null);
@@ -60,7 +60,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   
   const handleLogin = async () => {
     setEmailErr('');
-    setPassWdErr('');
+    setPasswdErr('');
     setInPost(true);
 
     if (!validator.validate(user.email)) {
@@ -70,26 +70,34 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     }
 
     if (!user.password) {
-      setPassWdErr('Password cannot be empty');
+      setPasswdErr('Password cannot be empty');
       setInPost(false);
       return;
     }
-
+ 
     try {
       // Call the login function from the AuthContext with local state variables
-      login(user.email,user.password); 
+      await secureLogin(user.email,user.password); 
       // The AuthContext will handle state updates and the AppNavigator will handle navigation automatically
-    } catch (error) {
-      console.error(error);
-      setPassWdErr('Invalid email or password');
-    } finally {
-      setInPost(false);
+    } catch (error: any) {
+    setInPost(false);
+    if (error.message.includes('account')) {
+        setEmailErr(error.message);
+        emailEl.current?.focus();
+    } else if (error.message.includes('password')) {
+        setPasswdErr(error.message);
+        passwdEl.current?.focus();
+    } else if (error.message.includes('Network error')) {
+        // Display a network-specific error message
+        setEmailErr(error.message);
+    } else {
+        console.error('Login failed:', error);
     }
-  };
+  };}
 
   function resetErrMsg(){
     setEmailErr('');
-    setPassWdErr('');
+    setPasswdErr('');
   }
 
   function resetForm(){
@@ -100,10 +108,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   return (
     <ParallaxScrollView
           headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
-          headerImage={
-    <Image source={require('@/assets/images/KantoKittens.png')} style={styles.reactLogo} />
-  }
-          >
+          headerImage={<Image source={require('@/assets/images/KantoKittens.png')} style={styles.reactLogo} />}>
           <SafeAreaView style={styles2.container}>
       <KeyboardAvoidingView  
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -135,7 +140,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               />
              <Text style={{color: 'white'}}>{passwdErr}</Text> 
              <View style={styles2.itemCenter}>
-                <Button mode="text" uppercase={false} onPress={() => navigation.navigate('ForgotPasswd', {userEmail: user.email})}>
+                <Button mode="text" uppercase={false} onPress={() => route.navigate('ForgotPasswd', {userEmail: user.email})}>
                    Forgot Password?
                  </Button>
               </View>
@@ -146,7 +151,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                  <Button mode="contained" style={[ styles.button ]} labelStyle={styles.buttonText} onPress={() => resetForm()}>
                    Reset
                  </Button>
-                 <Button mode="outlined" style={[ styles.button ]} labelStyle={styles.buttonText}onPress={() => navigation.navigate('UserJoin')}>
+                 <Button mode="outlined" style={[ styles.button ]} labelStyle={styles.buttonText}onPress={() => route.navigate('UserJoin')}>
                    Sign Up
                  </Button>
               </View>
@@ -158,7 +163,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         </View>
       }
     </SafeAreaView>
-            </ParallaxScrollView>
+      </ParallaxScrollView>
   );
 }
 

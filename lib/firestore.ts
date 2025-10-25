@@ -10,7 +10,7 @@ export const addUser = async (user: User) => {
 };
 
 // Function to retrieve a user from the 'users' collection
-export const getUser = async (uid: string): Promise<User | null> => {
+export const getUser = async (uid: string) => {
   const usersCollectionRef = collection(db, 'users');
   const userDocRef = doc(usersCollectionRef, uid);
   const docSnapshot = await getDoc(userDocRef);
@@ -21,7 +21,7 @@ export const getUser = async (uid: string): Promise<User | null> => {
   return null;
 };
 
-export const secureLogin = async (email: string, password: string): Promise<User | null> => {
+export const secureLogin = async (email: string, password: string) => {
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const userUid = userCredential.user.uid;
@@ -45,8 +45,18 @@ export const secureLogin = async (email: string, password: string): Promise<User
             console.warn("No such user document in Firestore! User needs to register.");
             return null;
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Firebase Auth login failed:', error);
-        throw error;
+        if (error.code === 'auth/wrong-password') {
+            throw new Error('Password error');
+        } else if (error.code === 'auth/user-not-found') {
+            throw new Error('Sorry, we can\'t find this account.');
+        } else if (error.code === 'auth/invalid-credential') {
+            throw new Error('Invalid Auth Credential');
+        } else if (error.code === 'unavailable') { // Handle offline error explicitly
+            throw new Error('Network error. Please check your internet connection.');
+        } else {
+            throw new Error('API call failed: ' + error.message);
+        }
     }
 };

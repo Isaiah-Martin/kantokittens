@@ -1,29 +1,28 @@
-import React, {useState, useRef, useContext, useCallback} from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import validator from 'email-validator';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { SafeAreaView, 
-         KeyboardAvoidingView, 
-         Platform, 
-         ScrollView,
-         View, 
-         Text,
-         Alert
-} from 'react-native';
-import { Button, TextInput, Switch, ActivityIndicator, MD3LightTheme as DefaultTheme } from 'react-native-paper';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import React, { useRef, useState } from 'react';
+//import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View
+} from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, Switch, TextInput } from 'react-native-paper';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../lib/firebase'; // Ensure your db instance is imported correctly
+import { Activity, MeetingTarget, UserContextType } from '../lib/types';
+import { getDateString, timezone } from '../lib/utils';
 import { styles2 } from '../styles/css';
-import { UserContext } from '../components/Context';
-import { DOMAIN_URL } from '../lib/constants';
-import { timezone, getDateString } from '../lib/utils';
-import {UserContextType, Activity, User, MeetingTarget} from '../lib/types';
 
 export default function ActivityDetail({ navigation, route }: {navigation: any; route: any;}) {
-  const userContext: UserContextType = useContext(UserContext);
+  const userContext: UserContextType =  useAuth();
   const { activityObj } = route.params || {};
   const [inEditing, setInEditing] = useState(false);
   const [inPost, setInPost] = useState(false);
@@ -45,12 +44,6 @@ export default function ActivityDetail({ navigation, route }: {navigation: any; 
   
       // To get a specific color, access the `colors` property on the theme
       const primaryColor = theme.colors.primary;
-
-  useFocusEffect(
-    useCallback(() => {
-      adjustErrDescr();
-    }, [navigation])
-  );
 
   function adjustErrDescr(){
     const errDes: string[] = [];
@@ -153,105 +146,104 @@ export default function ActivityDetail({ navigation, route }: {navigation: any; 
     setErrDescr(errDes);
   }  
 
-  async function updateGo(){
-      //Reset all the err messages
-      resetErrMsg();
-      //Check if Title is filled
-      if (!activity.title.trim()){
-         setActivity((prevState) => ({...prevState, title: activity.title.trim()}));
-         setTitleErr("Please type title, this field is required!");
-         (titleEl.current as any).focus();
-         return;
-      }
-      //Check if Dates is selected
-      if (activity.startTime >= activity.endTime){
-         setDatesErr("Starting time of selected range is later than ending time, please reselect!");
-         return;
-      } 
-      const currTime = (new Date().getTime()) / 1000;
-      if (activity.startTime < currTime || activity.endTime < currTime){
-         setDatesErr("We can't set the appointment for the previous time.");
-         return;
-      }
-      if (activity.meetingTargets.length > 0){
-        for (let i = 0; i < activity.meetingTargets.length; i++) {
-            if (activity.sendConfirm && activity.meetingTargets[i].name.trim()){
-               //Check if Email is filled
-               if (!activity.meetingTargets[i].email){
-                  handleSetErrDescr('You want to send confirmation email, please provide the email', i);
-                  return;
-               }
-            }
-            //Validate the email
-            if (activity.meetingTargets[i].email && !validator.validate(activity.meetingTargets[i].email)){
-               handleSetErrDescr('This email is not validated OK, please enter a legal email.', i);
-               return;
-            }
-        }
-      }
-
-      sortOutMeetingTargets();
-      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
-      setInPost(true);
-      const {data} = await axios.put(`${DOMAIN_URL}/api/updateschedule`, {userName: userContext.user.name, timezone, activity, activityObj} , { headers: headers });
-      setInPost(false);
-      if (data.no_authorization){
-         alert("No authorization to update this scheduled activity!");
-         return;
-      }
-      const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
-      const schedule:  Activity[] = scheduleStore ? JSON.parse(scheduleStore): [];
-      const idx = schedule.findIndex(item => item.id == data.id);
-      if (idx > -1){
-        schedule[idx] = data;
-        await AsyncStorage.setItem('schedule', JSON.stringify(schedule));
-      }  
-      navigation.navigate('Scheduler');
-  }
-
-  function confirmDelete(){
-    if (!userContext){
-      return;
-    }
-    Alert.alert(
-      "Delete Activity",
-      "Are you sure to delete this scheduled activity?",
-      [
-        {
-          text: "No",
-          onPress: () => console.log("Cancel Pressed"),
-          style: "cancel"
-        },
-        { text: "Yes", onPress: () => deleteActivity(userContext.user) }
-      ]
-    );
-
-  }
-  
-  async function deleteActivity(user: User){
+  async function updateGo() {
     try {
-      const headers = { authorization: `Bearer ${await SecureStore.getItemAsync('token')}` };
+      sortOutMeetingTargets();
       setInPost(true);
-      const {data} = await axios.delete(`${DOMAIN_URL}/api/removeschedule/${activityObj.id}`, { data: {...activityObj, userName: user.name, timezone}, headers: headers  });
+
+      // Get the ID of the activity to update
+      const activityId = activity.id;
+
+      // Create a reference to the specific document in the 'schedules' collection
+      const scheduleRef = doc(db, 'schedules', activityId);
+
+      // Create an object with the data to be updated
+      // Replace `activityObj` with the actual data you need to update
+      const updatedData = {
+        userName: userContext.user?.name,
+        timezone,
+        activity: { ...activity }, // Make sure to use the latest state or a copy
+        // You can also add specific fields from activityObj here
+      };
+
+      // Use `updateDoc` to update the document
+      await updateDoc(scheduleRef, updatedData);
+
       setInPost(false);
-      if (data.no_authorization){
-         return;
-      }
-      
-      //Save the resultant schedule to AsyncStorage
+
+      // After a successful update, handle the client-side data
       const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
-      const schedule:  Activity[] = scheduleStore ? JSON.parse(scheduleStore): [];
-      const sch = schedule.filter((item) => item.id != activityObj.id);
-      await AsyncStorage.setItem('schedule', JSON.stringify(sch));
+      const schedule: Activity[] = scheduleStore ? JSON.parse(scheduleStore) : [];
+      const idx = schedule.findIndex(item => item.id === activityId);
+      if (idx > -1) {
+        // Create a new updated activity object based on the local state
+        const updatedActivity = {
+          ...schedule[idx],
+          ...updatedData,
+          // Ensure you have a complete, updated activity object here.
+        };
+        schedule[idx] = updatedActivity;
+        await AsyncStorage.setItem('schedule', JSON.stringify(schedule));
+      }
+
       navigation.navigate('Scheduler');
-    }catch(e){
-      //
+
+    } catch (error) {
+      setInPost(false);
+      console.error("Error updating document: ", error);
+      alert("An error occurred while updating the schedule.");
+    }
+    }
+
+    function confirmDelete(){
+      if (!userContext){
+        return;
+      }
+      Alert.alert(
+        "Delete Activity",
+        "Are you sure to delete this scheduled activity?",
+        [
+          {
+            text: "No",
+            onPress: () => console.log("Cancel Pressed"),
+            style: "cancel"
+          },
+          { text: "Yes", onPress: () => deleteActivity() }
+        ]
+      );
+    }
+  
+  
+  async function deleteActivity(){
+  try {
+    setInPost(true);
+
+    // Create a document reference to the specific activity using its ID
+    const docRef = doc(db, "schedules", activityObj.id);
+
+    // Use deleteDoc to remove the document from Firestore
+    await deleteDoc(docRef);
+
+    setInPost(false);
+
+    // Remove the activity from AsyncStorage
+    const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
+    const schedule:  Activity[] = scheduleStore ? JSON.parse(scheduleStore): [];
+    const updatedSchedule = schedule.filter((item) => item.id !== activityObj.id);
+    await AsyncStorage.setItem('schedule', JSON.stringify(updatedSchedule));
+
+    navigation.navigate('Scheduler');
+
+    } catch(error) {
+      setInPost(false);
+      console.error("Error deleting activity:", error);
+      // You might want to show an alert to the user here
     }
   }
   
   const currTime = (new Date().getTime()) / 1000;   
   if (inEditing && activityObj.startTime >= currTime && activityObj.endTime >= currTime){
-  return (userContext &&
+  return (
     <SafeAreaView style={styles2.container}>
       <KeyboardAwareScrollView
         keyboardShouldPersistTaps='handled'
