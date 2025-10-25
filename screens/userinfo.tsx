@@ -8,14 +8,13 @@ import { TextInput as RNTextInput, SafeAreaView, Text, View } from 'react-native
 import { Button, MD3LightTheme as DefaultTheme, TextInput as PaperTextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { auth, db } from '../lib/firebase';
-import { User } from '../lib/types'; // Import your User type
 import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming your param list type
 import { styles2 } from '../styles/css';
+// Correctly define the screen props using NativeStackScreenProps
+type UserInfoScreenProps = NativeStackScreenProps<RootStackParamList, 'UserInfoScreen'>;
 
-type UserInfoScreenProps = NativeStackScreenProps<RootStackParamList, 'UserInfo'>;
-
-export default function UserInfo({ navigation }: { navigation: any}) {
-    const { user, loading, login } = useAuth(); // Get user and login from context
+export default function UserInfo({ navigation, route }: UserInfoScreenProps) {
+  const { user, loading, login, logout } = useAuth(); // Assuming useAuth also provides a logout function
     const [name, setName] = useState<string>('');
     const [nameErr, setNameErr] = useState<string>('');
     const nameEl = useRef<RNTextInput | null>(null);
@@ -87,12 +86,7 @@ export default function UserInfo({ navigation }: { navigation: any}) {
         
         //  Update Firebase Auth display name
         await updateProfile(auth.currentUser, { displayName: name.trim() });
-
-        // Update context with new user data
-        const updatedUser = { ...user, name: name.trim() } as User;
-        if(updatedUser.password){
-          await login(updatedUser.name, updatedUser.password); // Assuming login function updates context user state
-        }
+        
         setUpdateName(false);
         
       } catch (error) {

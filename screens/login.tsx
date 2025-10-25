@@ -16,13 +16,13 @@ import {
 } from 'react-native';
 import { ActivityIndicator, Button, MD3LightTheme, TextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
+import { AuthStackParamList } from '../navigation/RootStackParamList'; // Update the import path
 import { styles2 } from '../styles/css';
 const { width: screenWidth } = Dimensions.get('window');
 
-type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'LoginScreen'>;
+export type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-export default function LoginScreen({route, navigation}: { route: any, navigation: LoginScreenProps}) {
+export default function LoginScreen({ route, navigation }: LoginScreenProps) {
  const { login, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -140,7 +140,7 @@ export default function LoginScreen({route, navigation}: { route: any, navigatio
               />
              <Text style={{color: 'white'}}>{passwdErr}</Text> 
              <View style={styles2.itemCenter}>
-                <Button mode="text" uppercase={false} onPress={() => route.navigate('ForgotPasswd', {userEmail: user.email})}>
+                <Button mode="text" uppercase={false} onPress={() => {if (user && user.email) {navigation.navigate('ForgotPassword', { userEmail: user.email });} else {navigation.navigate('ForgotPassword'); }}}>
                    Forgot Password?
                  </Button>
               </View>
@@ -151,7 +151,7 @@ export default function LoginScreen({route, navigation}: { route: any, navigatio
                  <Button mode="contained" style={[ styles.button ]} labelStyle={styles.buttonText} onPress={() => resetForm()}>
                    Reset
                  </Button>
-                 <Button mode="outlined" style={[ styles.button ]} labelStyle={styles.buttonText}onPress={() => route.navigate('UserJoin')}>
+                 <Button mode="outlined" style={[ styles.button ]} labelStyle={styles.buttonText}onPress={() => navigation.navigate('UserJoin')}>
                    Sign Up
                  </Button>
               </View>

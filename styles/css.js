@@ -18,16 +18,34 @@ export const styles2 = StyleSheet.create({
   input: {
     marginBottom: 16,
   },
+  latoFont: {
+    fontFamily: 'Lato',
+    fontSize: 20
+  },
+  latoFont2: {
+    fontFamily: 'Lato',
+    fontSize: 20,
+    fontWeight: 'light'
+  },
+  latoFont3: {
+    fontFamily: 'Georgia',
+    fontSize: 24,
+    fontWeight: 'condensedBold'
+  },
   errorText: {
     color: 'red',
     marginBottom: 8,
+    backgroundColor: 'yellow'
   },
   successText: {
-    color: 'green',
+    color: 'black',
     marginBottom: 8,
+    backgroundColor: 'yellow'
   },
   loginButton: {
-    marginTop: 16,
+    marginTop: 10,
+     backgroundColor: 'black',
+     color: '#D98CBF'
   },
   loadingIndicator: {
     marginTop: 8,

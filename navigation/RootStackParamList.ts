@@ -1,3 +1,6 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+import { AppTabsParamList } from './AppTabsParamList'; // Create this file as described below
+
 export interface UserJwtPayload {
     userId: string;
 }
@@ -7,22 +10,37 @@ export interface ActivityJwtPayload {
     id: string;
 }
 
+// Define types for the authentication stack screens
+export type AuthStackParamList = {
+  Login: undefined;
+  UserJoin: undefined;
+  ForgotPassword: { userEmail: string } | undefined; 
+};
+
+// Define types for the main app stack, which contains the tabs
+export type AppStackParamList = {
+  AppTabs: NavigatorScreenParams<AppTabsParamList>;
+  // ... other app stack screens if any
+};
+
 // Define the list of screens and their parameters
 export type RootStackParamList = {
   Home: undefined; // Home screen takes no parameters
   UserJoin: undefined; // UserJoin screen takes no parameters
-  ForgotPasswd: {userEmail: string};
+  ForgotPassword: { userEmail: string } | undefined;
   BookingScreen: undefined;
   AddBooking: undefined;
-  UserInfo: undefined;
+  UserInfoScreen: undefined;
   LogoutScreen: undefined;
   LoginScreen: undefined;
   ActivityDetail: undefined;
   LoginedStack: undefined;
   Login: undefined;
   Logout: undefined;
-  // Add other screens here
-  //Profile: { userId: string }; // Example screen with a parameter
+  // The 'AuthStack' screen's params are the param list of the auth stack
+  AuthStack: NavigatorScreenParams<AuthStackParamList>;
+  // The 'AppStack' screen's params are the param list of the main app stack
+  AppStack: NavigatorScreenParams<AppStackParamList>; 
 };
 
 export interface UserData {

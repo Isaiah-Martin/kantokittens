@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FirebaseError } from 'firebase/app';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
@@ -12,9 +13,13 @@ import {
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, TextInput } from 'react-native-paper';
 import { auth } from '../lib/firebase';
 import { addUser } from '../lib/firestore';
+import { RootStackParamList } from '../lib/types'; // Assuming this file exists and is correctly defined
 import { styles2 } from '../styles/css';
 
-export default function UserJoin({ navigation }: { navigation: any}) {
+// Use the component's own props type
+export type UserJoinScreenProps = NativeStackScreenProps<RootStackParamList, 'UserJoinScreen'>;
+
+export default function UserJoinScreen({ navigation, route }: UserJoinScreenProps) {
   const [user, setUser] = useState({ name: '', email: '', password: '' });
   const [password2, setPassWd2] = useState('');
   const [nameerr, setNameErr] = useState('');

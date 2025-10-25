@@ -10,45 +10,36 @@ export interface ActivityJwtPayload {
 // Define the list of screens and their parameters
 export type RootStackParamList = {
   Home: undefined; // Home screen takes no parameters
-  UserJoin: undefined; // UserJoin screen takes no parameters
+  UserJoinScreen: undefined; // UserJoin screen takes no parameters
   ForgotPasswd: {userEmail: string};
   BookingScreen: undefined;
   AddBooking: undefined;
   UserInfo: undefined;
-  LogoutScreen: undefined;
   ActivityDetail: undefined;
-  LoginedStack: undefined;
+  LogoutScreen: undefined;
+  LoginScreen: undefined;
   Login: undefined;
   Logout: undefined;
   // Add other screens here
   //Profile: { userId: string }; // Example screen with a parameter
 };
 
-export interface UserData {
-    id: string;
-    email: string;
-    name: string;
-    password: string;
-    created: string;
-    token: string;
-}
-
+// Client-Side Context User Object
 export interface User {
-  uid?: string;
+  uid?: string; // 
   email: string;
-  password?: string;
-  logintime?: number;
   name: string;
-  // Add any other properties your user object has
+  created?: string; 
 }
 
-// This interface defines the contract for your context value
+// This interface defines the contract for your context value.
 export interface UserContextType {
-isLoggedIn: boolean;
-user: User | null | undefined; // <-- Important: user can be null
-login: (email: string, password: string) => Promise<void> | void;
-logout: () => Promise<void> | void;
-loading: boolean;
+  isLoggedIn: boolean;
+  user: User | null | undefined; // User is an object or null if not logged in.
+  loading: boolean;
+  // asynchronous actions available through the context
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export interface Activity {

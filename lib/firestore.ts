@@ -52,6 +52,7 @@ export const secureLogin = async (email: string, password: string) => {
         } else if (error.code === 'auth/user-not-found') {
             throw new Error('Sorry, we can\'t find this account.');
         } else if (error.code === 'auth/invalid-credential') {
+            console.error('Username, Password: ', password)
             throw new Error('Invalid Auth Credential');
         } else if (error.code === 'unavailable') { // Handle offline error explicitly
             throw new Error('Network error. Please check your internet connection.');

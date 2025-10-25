@@ -15,10 +15,10 @@ import { auth } from '../lib/firebase';
 import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
 import { styles2 } from '../styles/css';
 
-type ForgotPasswordScreenProps = NativeStackScreenProps<RootStackParamList, 'ForgotPasswd'>;
+export type ForgotPasswordScreenProps = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
-export default function ForgotPasswd({route, navigation}: { route: any, navigation: ForgotPasswordScreenProps}) {
-    const userEmailFromRoute = route.params?.userEmail || '';
+export default function ForgotPassword({route, navigation}: { route: any, navigation: ForgotPasswordScreenProps}) {
+    const userEmailFromRoute = route.params?.userEmail;
     const [email, setEmail] = useState(userEmailFromRoute);
     const [emailErr, setEmailErr] = useState('');
     const emailEl = useRef<RNTextInput | null>(null);
@@ -72,8 +72,8 @@ export default function ForgotPasswd({route, navigation}: { route: any, navigati
                behavior={Platform.OS === "ios" ? "padding" : "height"}
                style={styles2.container}>
                <View style={styles2.loginMain}>
-                  <Text style={styles2.button}>Forgot Password?</Text>
-                  <Text>Enter your email to receive a password reset link.</Text>
+                  <Text style={styles2.latoFont3}>Forgot Password?</Text>
+                  <Text style={styles2.latoFont2}>Enter email for password reset link.</Text>
                   <TextInput
                      ref={emailEl}
                      label="Email"
