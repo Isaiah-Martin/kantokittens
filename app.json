@@ -19,10 +19,12 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#808080",
-        "backgroundImage": "./assets/images/KantoKittensCover.png",
+        "backgroundImage": "./assets/images/KantoKittensCover.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json",
+      "package": "com.kantokittens.myapp"
     },
     "web": {
       "output": "static",
@@ -47,13 +49,15 @@
           "resizeMode": "contain",
           "backgroundColor": "#808080",
           "dark": {
-            "backgroundColor": "#000000" 
+            "backgroundColor": "#000000"
           }
         }
       ],
       "expo-localization",
       "expo-secure-store",
-      "expo-build-properties"
+      "expo-build-properties",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "experiments": {
       "typedRoutes": true,

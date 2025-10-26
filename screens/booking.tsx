@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Timestamp } from '@react-native-firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
-import { collection, getDocs, orderBy, query, where } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,9 +14,9 @@ import {
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Button, Switch } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../lib/firebase'; // Ensure your db instance is imported correctly
-import { Activity, User, UserContextType } from '../lib/types';
+import { firestore } from '../lib/firebase';
 import { getDateString } from '../lib/utils';
+import { Activity, User, UserContextType } from '../navigation/RootStackParamList';
 import { styles2 } from '../styles/css';
 
 export default function BookingScreen({ navigation, route }: { navigation: any; route: any}) {
@@ -71,75 +71,85 @@ export default function BookingScreen({ navigation, route }: { navigation: any; 
   
   async function fetchSchedule(sch: Activity[], user: User) {
     try {
-      const userId = user.uid;
-      if (!userId) {
-        console.error("User ID is missing.");
-        return;
-      }
-      
-      // Get the timestamp of the last fetch from local storage
-      const scheduleRecent = await AsyncStorage.getItem(`schedule_recent_${userId}`) || '';
-
-      const activitiesRef = collection(db, 'activities');
-      let q;
-
-      if (scheduleRecent) {
-        // Query for activities that have been created or updated since the last fetch
-        q = query(
-          activitiesRef,
-          where('ownerId', '==', userId), // Assuming activities are tied to a user
-          where('created', '>', scheduleRecent),
-          orderBy('created') // Order by the created timestamp
-        );
-      } else {
-        // Fetch all activities for the user if it's the first time
-        q = query(
-          activitiesRef,
-          where('ownerId', '==', userId),
-          orderBy('created')
-        );
-      }
-
-      const querySnapshot = await getDocs(q);
-      const result: Activity[] = [];
-      
-      querySnapshot.forEach((doc) => {
-        // Filter for active documents and get the data
-        if (!doc.data().removed) {
-          result.push({ id: doc.id, ...doc.data() } as Activity);
-        }
-      });
-
-      // Merge the new data with the existing data
-      let schdl = [...sch];
-      let recent = '';
-
-      for (const item of result) {
-        const idx = schdl.findIndex((itm) => itm.id === item.id);
-        if (idx > -1) {
-          schdl[idx] = item;
-        } else {
-          schdl.push(item);
-        }
-        recent = item.created;
-      }
-
-      // Update state and AsyncStorage
-      setActivities(schdl); // Assuming `setActivities` is a state setter function
-      await AsyncStorage.setItem(`schedule_${userId}`, JSON.stringify(schdl));
-
-      if (recent) {
-        await AsyncStorage.setItem(`schedule_recent_${userId}`, recent);
-      }
-      
-      // Set a general fetch time
-      const fetchTime = new Date().getTime() / 1000;
-      await AsyncStorage.setItem(`fetchtime_${userId}`, fetchTime.toString());
-
-    } catch (e) {
-      console.error(e);
+    const userId = user.uid;
+    if (!userId) {
+      console.error("User ID is missing.");
+      return;
     }
+    
+    // Get the timestamp of the last fetch from local storage
+    const scheduleRecent = await AsyncStorage.getItem(`schedule_recent_${userId}`);
+
+    const activitiesRef = firestore().collection('activities');
+    let q = activitiesRef.where('ownerId', '==', userId);
+
+    if (scheduleRecent) {
+      // Create a Timestamp object from the stored string for the query
+      const lastFetchTimestamp = Timestamp.fromMillis(parseInt(scheduleRecent, 10));
+      q = q.where('created', '>', lastFetchTimestamp);
+    }
+    
+    // Always order by 'created' to ensure consistency
+    q = q.orderBy('created');
+
+    const querySnapshot = await q.get();
+    const result: Activity[] = [];
+    let recent = scheduleRecent || '';
+
+    for (const doc of querySnapshot.docs) {
+      const data = doc.data(); // Get data without immediate cast
+
+      // Filter for active documents
+      // Ensure 'removed' exists before checking
+      if (data && !data.removed) { 
+        result.push({
+          ...data,
+          id: doc.id,
+          // Convert timestamp back to a valid type if necessary for Activity
+          created: data.created?.toDate(),
+        } as Activity);
+      }
+
+      // Update the `recent` variable with the latest created timestamp
+      if (data.created instanceof Timestamp) { // Use instanceof to be sure
+        const createdTimestamp = data.created.toMillis().toString();
+        if (createdTimestamp > recent) {
+          recent = createdTimestamp;
+        }
+      }
+    }
+
+    // Merge the new data with the existing data
+    let schdl = [...sch];
+
+    for (const item of result) {
+      const idx = schdl.findIndex((itm) => itm.id === item.id);
+      if (idx > -1) {
+        schdl[idx] = item;
+      } else {
+        schdl.push(item);
+      }
+    }
+    
+    // Filter out removed items before updating state and storage
+    schdl = schdl.filter(item => !item.removed);
+    
+    // Update state and AsyncStorage
+    setActivities(schdl); // Assuming `setActivities` is a state setter function
+    await AsyncStorage.setItem(`schedule_${userId}`, JSON.stringify(schdl));
+
+    if (recent) {
+      await AsyncStorage.setItem(`schedule_recent_${userId}`, recent);
+    }
+    
+    // Set a general fetch time
+    const fetchTime = new Date().getTime();
+    await AsyncStorage.setItem(`fetchtime_${userId}`, fetchTime.toString());
+
+  } catch (e) {
+    console.error(e);
   }
+}
 
   function changeSelectRange(value: boolean){
      if (value){

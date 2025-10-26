@@ -1,7 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Timestamp } from '@react-native-firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import validator from 'email-validator';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   Keyboard,
@@ -13,11 +12,10 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, Switch, TextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../lib/firebase';
-import { Activity, MeetingTarget } from '../lib/types';
+import { firestore } from '../lib/firebase';
 import { getDateString, timezone } from '../lib/utils';
+import { Activity, MeetingTarget } from '../navigation/RootStackParamList';
 import { styles2 } from '../styles/css';
-
 
 export default function AddSchedule({ navigation }: { navigation: any}) {
   const { user } = useAuth();
@@ -196,37 +194,32 @@ export default function AddSchedule({ navigation }: { navigation: any}) {
       }
 
       const newActivity = {
-        title: title.trim(),
-        startTime: startDate.getTime(),
-        endTime: endDate.getTime(),
-        meetingTargets,
-        sendConfirm,
-        description,
-        timezone,
-        ownerId: user.uid, // Tie the activity to the current user
-        created: serverTimestamp(), // Use Firestore server timestamp
-      };
-
-      const docRef = await addDoc(collection(db, 'activities'), newActivity);
-      
-      // Since addDoc generates a new document ID, we need to add it to the local state
-      const newActivityWithId = {
-        id: docRef.id,
-        ...newActivity,
-        created: new Date().toISOString(), // Use local time for immediate UI update
-      } as Activity;
-      // Update local AsyncStorage
-      const scheduleStore: string | null = await AsyncStorage.getItem(`schedule_${user.uid}`);
-      const schedule: Activity[] = scheduleStore ? JSON.parse(scheduleStore) : [];
-      schedule.push(newActivityWithId);
-      await AsyncStorage.setItem(`schedule_${user.uid}`, JSON.stringify(schedule));
-      await AsyncStorage.setItem(`schedule_recent_${user.uid}`, newActivityWithId.created);
+      title: title.trim(),
+      startTime: startDate.getTime(),
+      endTime: endDate.getTime(),
+      meetingTargets,
+      sendConfirm,
+      description,
+      timezone,
+      ownerId: user.uid, // Tie the activity to the current user
+      created: Timestamp.now(), // Use native SDK's server timestamp
+    };
+    
+    // 2. Add the document using the native SDK's API
+    // firestore() gets the default Firestore instance.
+    const docRef = await firestore().collection('activities').add(newActivity);
+    
+    // 3. Update local state
+    const newActivityWithId = {
+      id: docRef.id,
+      ...newActivity,
+      created: new Date().toISOString(), // Use local time for immediate UI update
+    } as Activity;
 
       navigation.navigate('Scheduler');
 
     } catch (e) {
       console.error(e);
-      // Handle error (e.g., show a toast)
     } finally {
       setInPost(false);
     }

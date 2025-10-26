@@ -1,6 +1,4 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { FirebaseError } from 'firebase/app';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -13,14 +11,13 @@ import {
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, TextInput } from 'react-native-paper';
 import { auth } from '../lib/firebase';
 import { addUser } from '../lib/firestore';
-import { RootStackParamList } from '../lib/types'; // Assuming this file exists and is correctly defined
+import { AuthStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
 import { styles2 } from '../styles/css';
 
 // Use the component's own props type
-export type UserJoinScreenProps = NativeStackScreenProps<RootStackParamList, 'UserJoinScreen'>;
-
-export default function UserJoinScreen({ navigation, route }: UserJoinScreenProps) {
-  const [user, setUser] = useState({ name: '', email: '', password: '' });
+export type UserJoinScreenProps = NativeStackScreenProps<AuthStackParamList, 'UserJoinScreen'>;
+export default function UserJoinScreen({ route, navigation }: UserJoinScreenProps) {
+ const [user, setUser] = useState({ name: '', email: '', password: '' });
   const [password2, setPassWd2] = useState('');
   const [nameerr, setNameErr] = useState('');
   const [emailerr, setEmailErr] = useState('');
@@ -76,25 +73,27 @@ export default function UserJoinScreen({ navigation, route }: UserJoinScreenProp
 
     setInPost(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
+      // Use the native SDK's method for creating a user
+      const userCredential = await auth().createUserWithEmailAndPassword(user.email, user.password);
+
+      // Now call your addUser function, assuming it's been updated
       await addUser({ name: user.name, email: user.email });
+      
       setInPost(false);
       navigation.navigate('Login');
-    } catch (error) {
+    } catch (error: any) { // Use 'any' for better error type handling
       setInPost(false);
-      if (error instanceof FirebaseError) {
-        if (error.code === 'auth/email-already-in-use') {
-          setEmailErr('That email address is already in use!');
-        } else if (error.code === 'auth/invalid-email') {
-          setEmailErr('That email address is invalid!');
-        } else {
-          setPassWdErr(error.message)
-        }
+
+      if (error.code === 'auth/email-already-in-use') {
+        setEmailErr('That email address is already in use!');
+      } else if (error.code === 'auth/invalid-email') {
+        setEmailErr('That email address is invalid!');
       } else {
-        setPassWdErr('An unexpected error occurred.');
+        setPassWdErr(error.message);
       }
     }
   }
+
 
   function resetForm(){
     setUser({ name: '', email: '', password: '' });

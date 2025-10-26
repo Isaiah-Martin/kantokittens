@@ -1,14 +1,13 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import validator from 'email-validator';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import {
-   KeyboardAvoidingView,
-   Platform,
-   TextInput as RNTextInput,
-   SafeAreaView,
-   Text,
-   View
+    KeyboardAvoidingView,
+    Platform,
+    TextInput as RNTextInput,
+    SafeAreaView,
+    Text,
+    View
 } from 'react-native';
 import { Button, MD3LightTheme as DefaultTheme, TextInput } from 'react-native-paper';
 import { auth } from '../lib/firebase';
@@ -34,37 +33,38 @@ export default function ForgotPassword({route, navigation}: { route: any, naviga
     };
 
     const handleSendResetEmail = async () => {
+    setEmailErr('');
+    setMessage('');
+
+    if (!email) {
+        setEmailErr("Please type your email, this field is required!");
+        emailEl.current?.focus();
+        return;
+    }
+
+    if (!validator.validate(email)) {
+        setEmailErr("This email is not valid. Please enter a valid email address.");
+        emailEl.current?.focus();
+        return;
+    }
+    
+    setInPost(true);
+    try {
+        // Use the native SDK's method to send the password reset email
+        await auth().sendPasswordResetEmail(email);
+        setMessage("Password reset email sent. Please check your inbox.");
         setEmailErr('');
-        setMessage('');
-
-        if (!email) {
-            setEmailErr("Please type your email, this field is required!");
-            emailEl.current?.focus();
-            return;
+    } catch (error: any) {
+        console.error("Password reset error:", error);
+        if (error.code === 'auth/user-not-found') {
+            setEmailErr("No account found for this email address.");
+        } else {
+            setEmailErr("An error occurred. Please try again.");
         }
-
-        if (!validator.validate(email)) {
-            setEmailErr("This email is not valid. Please enter a valid email address.");
-            emailEl.current?.focus();
-            return;
-        }
-        
-        setInPost(true);
-        try {
-            await sendPasswordResetEmail(auth, email);
-            setMessage("Password reset email sent. Please check your inbox.");
-            setEmailErr('');
-        } catch (error: any) {
-            console.error("Password reset error:", error);
-            if (error.code === 'auth/user-not-found') {
-                setEmailErr("No account found for this email address.");
-            } else {
-                setEmailErr("An error occurred. Please try again.");
-            }
-        } finally {
-            setInPost(false);
-        }
-    };
+    } finally {
+        setInPost(false);
+    }
+};
 
     return (
       <SafeAreaView style={styles2.container}>

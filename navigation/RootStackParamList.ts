@@ -2,11 +2,11 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 import { AppTabsParamList } from './AppTabsParamList'; // Create this file as described below
 
 export interface UserJwtPayload {
-    userId: string;
+    uid: string;
 }
 
 export interface ActivityJwtPayload {
-    userId: string;
+    uid: string;
     id: string;
 }
 
@@ -15,18 +15,29 @@ export type AuthStackParamList = {
   Login: undefined;
   UserJoin: undefined;
   ForgotPassword: { userEmail: string } | undefined; 
+  LogoutScreen: undefined;
+  LoginScreen: undefined;
+  UserJoinScreen: undefined; // UserJoin screen takes no parameters
 };
 
 // Define types for the main app stack, which contains the tabs
 export type AppStackParamList = {
   AppTabs: NavigatorScreenParams<AppTabsParamList>;
   // ... other app stack screens if any
+  Home: undefined; // Home screen takes no parameters
+  BookingScreen: undefined;
+  AddBooking: undefined;
+  UserInfoScreen: undefined;
+  LogoutScreen: undefined;
+  ActivityDetail: undefined;
+  LoginedStack: undefined;
+  Logout: undefined;
 };
 
 // Define the list of screens and their parameters
 export type RootStackParamList = {
   Home: undefined; // Home screen takes no parameters
-  UserJoin: undefined; // UserJoin screen takes no parameters
+  UserJoinScreen: undefined; // UserJoin screen takes no parameters
   ForgotPassword: { userEmail: string } | undefined;
   BookingScreen: undefined;
   AddBooking: undefined;
@@ -44,7 +55,7 @@ export type RootStackParamList = {
 };
 
 export interface UserData {
-    id: string;
+    uid: string;
     email: string;
     name: string;
     password: string;
@@ -52,8 +63,17 @@ export interface UserData {
     token: string;
 }
 
+export interface UserContextType {
+    isLoggedIn: boolean; 
+    user: User | null;
+    login: (email: string, password: string) => Promise<void>;
+    logout: () => Promise<void>;
+    loading: boolean;
+}
+
+
 export interface User {
-    id?: string;
+    uid?: string;
     email?: string;
     name?: string;
     token?: string;
@@ -68,6 +88,8 @@ export interface Activity {
     meetingTargets: MeetingTarget[];
     sendConfirm: boolean;
     description: string;
+    created: string;
+    removed?: boolean; 
 }
 
 export interface MeetingTarget {
@@ -78,7 +100,7 @@ export interface MeetingTarget {
 }
 
 export interface ActivityUser {
-    userId: string;
+    uid: string;
     userName: string;
 }
 
@@ -87,13 +109,6 @@ export type ActivityDetail = Activity & ActivityUser;
 export interface Activities {
     result: Activity[];
     removedact: string[];
-}
-
-export interface UserContextType {
-    isLoggedIn: boolean; 
-    user: User; 
-    login: (user?: User) => void; 
-    logout: () => void;
 }
 
 export interface UserUpdate{

@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 //import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,9 +15,9 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, Switch, TextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../lib/firebase'; // Ensure your db instance is imported correctly
-import { Activity, MeetingTarget, UserContextType } from '../lib/types';
+import { firestore } from '../lib/firebase';
 import { getDateString, timezone } from '../lib/utils';
+import { Activity, MeetingTarget, UserContextType } from '../navigation/RootStackParamList';
 import { styles2 } from '../styles/css';
 
 export default function ActivityDetail({ navigation, route }: {navigation: any; route: any;}) {
@@ -147,53 +146,52 @@ export default function ActivityDetail({ navigation, route }: {navigation: any; 
   }  
 
   async function updateGo() {
-    try {
-      sortOutMeetingTargets();
-      setInPost(true);
+  try {
+    sortOutMeetingTargets();
+    setInPost(true);
 
-      // Get the ID of the activity to update
-      const activityId = activity.id;
+    // Get the ID of the activity to update
+    const activityId = activity.id;
 
-      // Create a reference to the specific document in the 'schedules' collection
-      const scheduleRef = doc(db, 'schedules', activityId);
+    // Create a reference to the specific document in the 'schedules' collection
+    const scheduleRef = firestore().collection('schedules').doc(activityId);
 
-      // Create an object with the data to be updated
-      // Replace `activityObj` with the actual data you need to update
-      const updatedData = {
-        userName: userContext.user?.name,
-        timezone,
-        activity: { ...activity }, // Make sure to use the latest state or a copy
-        // You can also add specific fields from activityObj here
+    // Create an object with the data to be updated
+    const updatedData = {
+      userName: userContext.user?.name,
+      timezone,
+      activity: { ...activity }, // Make sure to use the latest state or a copy
+      // You can also add specific fields from activityObj here
+    };
+
+    // Use `update` to update the document
+    await scheduleRef.update(updatedData);
+
+    setInPost(false);
+
+    // After a successful update, handle the client-side data
+    const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
+    const schedule: Activity[] = scheduleStore ? JSON.parse(scheduleStore) : [];
+    const idx = schedule.findIndex(item => item.id === activityId);
+    if (idx > -1) {
+      // Create a new updated activity object based on the local state
+      const updatedActivity = {
+        ...schedule[idx],
+        ...updatedData,
+        // Ensure you have a complete, updated activity object here.
       };
-
-      // Use `updateDoc` to update the document
-      await updateDoc(scheduleRef, updatedData);
-
-      setInPost(false);
-
-      // After a successful update, handle the client-side data
-      const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
-      const schedule: Activity[] = scheduleStore ? JSON.parse(scheduleStore) : [];
-      const idx = schedule.findIndex(item => item.id === activityId);
-      if (idx > -1) {
-        // Create a new updated activity object based on the local state
-        const updatedActivity = {
-          ...schedule[idx],
-          ...updatedData,
-          // Ensure you have a complete, updated activity object here.
-        };
-        schedule[idx] = updatedActivity;
-        await AsyncStorage.setItem('schedule', JSON.stringify(schedule));
-      }
-
-      navigation.navigate('Scheduler');
-
-    } catch (error) {
-      setInPost(false);
-      console.error("Error updating document: ", error);
-      alert("An error occurred while updating the schedule.");
+      schedule[idx] = updatedActivity;
+      await AsyncStorage.setItem('schedule', JSON.stringify(schedule));
     }
-    }
+
+    navigation.navigate('Scheduler');
+
+  } catch (error) {
+    setInPost(false);
+    console.error("Error updating document: ", error);
+    alert("An error occurred while updating the schedule.");
+  }
+}
 
     function confirmDelete(){
       if (!userContext){
@@ -213,34 +211,33 @@ export default function ActivityDetail({ navigation, route }: {navigation: any; 
       );
     }
   
-  
   async function deleteActivity(){
   try {
     setInPost(true);
 
     // Create a document reference to the specific activity using its ID
-    const docRef = doc(db, "schedules", activityObj.id);
+    const docRef = firestore().collection("schedules").doc(activityObj.id);
 
-    // Use deleteDoc to remove the document from Firestore
-    await deleteDoc(docRef);
+    // Use the `delete` method on the document reference to remove the document
+    await docRef.delete();
 
     setInPost(false);
 
     // Remove the activity from AsyncStorage
     const scheduleStore: string | null = await AsyncStorage.getItem('schedule');
-    const schedule:  Activity[] = scheduleStore ? JSON.parse(scheduleStore): [];
+    const schedule: Activity[] = scheduleStore ? JSON.parse(scheduleStore) : [];
     const updatedSchedule = schedule.filter((item) => item.id !== activityObj.id);
     await AsyncStorage.setItem('schedule', JSON.stringify(updatedSchedule));
 
     navigation.navigate('Scheduler');
 
-    } catch(error) {
-      setInPost(false);
-      console.error("Error deleting activity:", error);
-      // You might want to show an alert to the user here
-    }
+  } catch(error) {
+    setInPost(false);
+    console.error("Error deleting activity:", error);
+    // You might want to show an alert to the user here
   }
-  
+}
+
   const currTime = (new Date().getTime()) / 1000;   
   if (inEditing && activityObj.startTime >= currTime && activityObj.endTime >= currTime){
   return (

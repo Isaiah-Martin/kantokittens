@@ -1,9 +1,8 @@
-import { secureLogin } from '@/lib/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, updateDoc } from 'firebase/firestore';
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { db } from '../lib/firebase';
-import { User, UserContextType } from '../lib/types'; // Adjust path if needed
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { auth, firestore } from '../lib/firebase';
+import { secureLogin } from '../lib/firestore'; // Assuming secureLogin is in its own file
+import { User, UserContextType } from '../navigation/RootStackParamList';
 
 // Define the AuthContext
 export const AuthContext = createContext<UserContextType | null>(null);
@@ -26,11 +25,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const userData = await secureLogin(email, password); // Call the secure login logic
+      const userData = await secureLogin(email, password); // Your updated secureLogin from the previous step
       if (userData && userData.uid) {
         // Update Firestore document with new login time
-        const userDocRef = doc(db, 'users', userData.uid);
-        await updateDoc(userDocRef, { logintime: Date.now() });
+        const userDocRef = firestore().collection('users').doc(userData.uid);
+        await userDocRef.update({ logintime: Date.now() });
 
         await AsyncStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
@@ -45,27 +44,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Define the logout function
   const logout = async () => {
-    setLoading(true);
     try {
-      await AsyncStorage.removeItem('user');
-      setUser(null);
+        await auth().signOut();
+        await AsyncStorage.removeItem('user');
+        setUser(null);
     } catch (error) {
         console.error('Logout failed:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Memoize the context value to prevent re-renders
+  // Memoize the context value
   const value = useMemo(() => ({
-    isLoggedIn: !!user,
     user,
+    loading,
     login,
     logout,
-    loading,
+    isLoggedIn: !!user, 
   }), [user, loading]);
 
-  // Handle initial user loading
+  // Handle initial user loading (on app start)
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -77,9 +74,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Failed to load user from storage:', error);
       } finally {
         setLoading(false);
-         }
+      }
     };
     loadUser();
+
+  const subscriber = auth().onAuthStateChanged(firebaseUser => {
+    if (firebaseUser) {
+      // Ensure email is a string, providing a fallback for the null case
+      const email = firebaseUser.email ?? '';
+      setUser({ ...user, uid: firebaseUser.uid, email: email });
+    } else {
+      setUser(null);
+    }
+    setLoading(false);
+  });
+
+    return subscriber; // Unsubscribe on unmount
   }, []);
 
   return (

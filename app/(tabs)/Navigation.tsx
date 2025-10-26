@@ -4,35 +4,18 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import 'react-native-gesture-handler';
 import { useAuth } from '../../context/AuthContext'; // Use the custom hook
+import { AppStackParamList, RootStackParamList } from '../../navigation/RootStackParamList';
 import BookingScreen from '../../screens/booking';
 import AddBooking from '../../screens/bookingadd';
-import ForgotPasswd from '../../screens/forgotpasswd';
+import ForgotPassword from '../../screens/forgotpassword';
 import LoadingScreen from '../../screens/loading';
 import LoginScreen from '../../screens/login';
 import LogoutScreen from '../../screens/logout';
-import UserJoin from '../../screens/useradd';
-import UserInfo from '../../screens/userinfo';
-
-// Define types for stack parameters if needed
-type RootStackParamList = {
-  Login: undefined;
-  UserJoin: undefined;
-  ForgotPasswd: undefined;
-  App: undefined;
-  AuthStack: undefined;
-  AppStack: undefined;
-};
-
-// Define types for authenticated screens
-type AppTabsParamList = {
-    Scheduler: undefined;
-    Add: undefined;
-    Personal: undefined;
-    Logout: undefined;
-};
+import UserJoinScreen from '../../screens/useradd';
+import UserInfoScreen from '../../screens/userinfo';
 
 const AuthStack = createNativeStackNavigator<RootStackParamList>();
-const AppTabs = createBottomTabNavigator<AppTabsParamList>();
+const AppTabs = createBottomTabNavigator<AppStackParamList>();
 
 // Screens for unauthenticated users
 const AuthStackScreen = () => (
@@ -44,13 +27,13 @@ const AuthStackScreen = () => (
           options={{ title: 'Login and Book Session' }}
           />
       <AuthStack.Screen 
-          name="UserJoin" 
-          component={UserJoin} 
+          name="UserJoinScreen" 
+          component={UserJoinScreen} 
           options={{ title: 'Join and Book Session' }}
           />
       <AuthStack.Screen 
-          name="ForgotPasswd" 
-          component={ForgotPasswd} 
+          name="ForgotPassword" 
+          component={ForgotPassword} 
           options={{ title: 'Send Reset Password Email' }}
           />
       </AuthStack.Group> 
@@ -61,7 +44,7 @@ const AuthStackScreen = () => (
 const AppTabsScreen = () => (
   <AppTabs.Navigator>
     <AppTabs.Screen
-      name="Scheduler"
+      name="BookingScreen"
       component={BookingScreen}
       options={{ headerTitle: 'Appointment Scheduler',
       tabBarIcon: ({ focused, color, size }) => {
@@ -70,7 +53,7 @@ const AppTabsScreen = () => (
       },
     }} />
     <AppTabs.Screen
-      name="Add"
+      name="ActivityDetail"
       component={AddBooking}
       options={{ headerTitle: 'Add Activity',
       tabBarIcon: ({ focused, color, size }) => {
@@ -79,8 +62,8 @@ const AppTabsScreen = () => (
       },
     }} />
     <AppTabs.Screen
-      name="Personal"
-      component={UserInfo}
+      name="UserInfoScreen"
+      component={UserInfoScreen}
       options={{ headerTitle: 'Update My Personal Data',
       tabBarIcon: ({ focused, color, size }) => {
         const iconName = focused ? 'information-circle' : 'information-circle-outline';

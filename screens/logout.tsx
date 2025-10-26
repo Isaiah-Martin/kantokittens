@@ -1,7 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import * as SecureStore from 'expo-secure-store';
-import { signOut } from 'firebase/auth';
 import * as React from 'react';
 import { StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
@@ -16,27 +13,24 @@ export default function LogoutScreen({ navigation, route }: LogoutScreenProps) {
 
   const handleLogout = async () => {
     try {
-      // Sign out from Firebase Authentication
-      await signOut(auth);
+      // Use the native SDK's method to sign out
+      await auth().signOut();
 
-      // Clear the user in your context
-      logout(); // The logout function in your context should set the user to undefined
+      // The logout function in your context should handle state changes and storage
+      logout();
 
-      // Clear stored data (optional, but good practice)
-      await AsyncStorage.removeItem('user');
-      await SecureStore.deleteItemAsync('token');
-
-      } catch (error) {
+    } catch (error) {
       console.error('Logout failed:', error);
-      }
-    };
+    }
+  };
 
-    return (
-        <Button onPress={handleLogout}>
-            Logout
-        </Button>
-    );
+  return (
+    <Button onPress={handleLogout}>
+      Logout
+    </Button>
+  );
 }
+
 
 const styles = StyleSheet.create({
   container: {

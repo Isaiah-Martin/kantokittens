@@ -1,13 +1,11 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { updatePassword, updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
 import passwordValidator from 'password-validator';
 import React, { useCallback, useRef, useState } from 'react';
 import { TextInput as RNTextInput, SafeAreaView, Text, View } from 'react-native';
 import { Button, MD3LightTheme as DefaultTheme, TextInput as PaperTextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
-import { auth, db } from '../lib/firebase';
+import { auth, firestore } from '../lib/firebase';
 import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming your param list type
 import { styles2 } from '../styles/css';
 // Correctly define the screen props using NativeStackScreenProps
@@ -18,11 +16,11 @@ export default function UserInfo({ navigation, route }: UserInfoScreenProps) {
     const [name, setName] = useState<string>('');
     const [nameErr, setNameErr] = useState<string>('');
     const nameEl = useRef<RNTextInput | null>(null);
-    const [passwd, setPasswd] = useState('');
-    const [passwdErr, setPasswdErr] = useState('');
-    const passwdEl = useRef<RNTextInput | null>(null);
+    const [password, setPassword] = useState('');
+    const [passwordErr, setPasswordErr] = useState('');
+    const passwordEl = useRef<RNTextInput | null>(null);
     const [updateName, setUpdateName] = useState(false);
-    const [updatePasswd, setUpdatePasswd] = useState(false);
+    const [updatePassword, setUpdatePassword] = useState(false);
     const [inPost, setInPost] = useState(false);
 
     const theme = {
@@ -45,70 +43,68 @@ export default function UserInfo({ navigation, route }: UserInfoScreenProps) {
     function backToInitial() {
       setName('');
       setNameErr('');
-      setPasswd('');
-      setPasswdErr('');
+      setPassword('');
+      setPasswordErr('');
       setUpdateName(false);
-      setUpdatePasswd(false);
+      setUpdatePassword(false);
       setInPost(false);
     }
 
     async function submitNameUpdate() {
-      if (!user || inPost) return;
+    if (!user || inPost) return;
 
-      setNameErr('');
-      if (!name.trim()) {
-         setNameErr("Please type your name, this field is required!");
-         nameEl.current?.focus();
-         return;
-      }
-
-      if (!auth.currentUser) {
-        setNameErr("Not authenticated. Please log in again.");
-        return;
-      }
-      
-      setInPost(true);
-      try {
-        if (!auth.currentUser || !user.uid) { // <-- Explicitly check for user.uid
-            throw new Error("Not authenticated or UID is missing.");
-        }
-
-        if (!user.uid) { // <-- Ensure UID is not empty
-            throw new Error("User ID is missing.");
-        }
-
-        // Update Firebase Auth display name
-        await updateProfile(auth.currentUser!, { displayName: name.trim() });
-        
-        // Update Firestore document
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, { name: name.trim() });
-        
-        //  Update Firebase Auth display name
-        await updateProfile(auth.currentUser, { displayName: name.trim() });
-        
-        setUpdateName(false);
-        
-      } catch (error) {
-        console.error("Error updating name:", error);
-        setNameErr("Failed to update name. Please try again.");
-      } finally {
-        setInPost(false);
-      }
+    setNameErr('');
+    if (!name.trim()) {
+      setNameErr("Please type your name, this field is required!");
+      nameEl.current?.focus();
+      return;
     }
 
-    async function submitPasswdUpdate() {
-      if (!user || inPost) return;
-
-      setPasswdErr('');
-      if (!passwd) {
-         setPasswdErr("Please type your password, this field is required!");
-         passwdEl.current?.focus();
-         return;
+    // Use the native SDK's auth() to get the current user
+    const currentUser = auth().currentUser;
+    if (!currentUser) {
+      setNameErr("Not authenticated. Please log in again.");
+      return;
+    }
+    
+    setInPost(true);
+    try {
+      // Check for user.uid is a good practice, thoughcurrentUser.uid should be available
+      if (!currentUser.uid) {
+          throw new Error("User ID is missing.");
       }
 
-      let schema = new passwordValidator();
-      schema
+      // Update Firebase Auth display name using the native SDK
+      await currentUser.updateProfile({ displayName: name.trim() });
+      
+      // Update Firestore document using the native SDK
+      const userDocRef = firestore().collection('users').doc(currentUser.uid);
+      await userDocRef.update({ name: name.trim() });
+      
+      // There was a duplicate updateProfile call, so remove one.
+      
+      setUpdateName(false);
+      
+    } catch (error) {
+      console.error("Error updating name:", error);
+      setNameErr("Failed to update name. Please try again.");
+    } finally {
+      setInPost(false);
+    }
+  }
+
+    async function submitPasswordUpdate() {
+    if (!user || inPost) return;
+
+    setPasswordErr('');
+    if (!password) {
+      setPasswordErr("Please type your password, this field is required!");
+      passwordEl.current?.focus();
+      return;
+    }
+
+    let schema = new passwordValidator();
+    schema
       .is().min(8)
       .is().max(100)
       .has().uppercase()
@@ -116,24 +112,37 @@ export default function UserInfo({ navigation, route }: UserInfoScreenProps) {
       .has().digits(2)
       .has().not().spaces();
 
-      if (!schema.validate(passwd)) {
-          setPasswdErr("The password you typed is not secured enough. It must have both uppercase and lowercase letters and a minimum of 2 digits.");
-          passwdEl.current?.focus();
-          return;
-      }
-      
-      setInPost(true);
-      try {
-        // Update Firebase Auth password
-        await updatePassword(auth.currentUser!, passwd);
-        setUpdatePasswd(false);
-      } catch (error) {
-        console.error("Error updating password:", error);
-        setPasswdErr("Failed to update password. Please try again.");
-      } finally {
-        setInPost(false);
-      }
+    if (!schema.validate(password)) {
+      setPasswordErr("The password you typed is not secured enough. It must have both uppercase and lowercase letters and a minimum of 2 digits.");
+      passwordEl.current?.focus();
+      return;
     }
+
+    setInPost(true);
+    try {
+      const currentUser = auth().currentUser;
+
+      if (!currentUser) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
+      // Update Firebase Auth password using the native SDK's method
+      await currentUser.updatePassword(password);
+      
+      setUpdatePassword(false); // Assuming this state controls the password update form visibility
+    } catch (error: any) { // Use 'any' or check for FirebaseError for better type-checking
+      console.error('Error updating password:', error);
+
+      // Provide specific error messages to the user
+      if (error.code === 'auth/requires-recent-login') {
+        setPasswordErr('This operation requires recent authentication. Please log out and log back in before changing your password.');
+      } else {
+        setPasswordErr('Failed to update password. Please try again.');
+      }
+    } finally {
+      setInPost(false);
+    }
+  }
   
     if (!user) {
       // Handle case where user is not logged in
@@ -164,22 +173,22 @@ export default function UserInfo({ navigation, route }: UserInfoScreenProps) {
          )}
 
          {/* Password Update Section */}
-         {!updatePasswd ? (
-           <Button onPress={() => setUpdatePasswd(true)}>Update Password</Button>
+         {!updatePassword ? (
+           <Button onPress={() => setUpdatePassword(true)}>Update Password</Button>
          ) : (
            <View>
              <PaperTextInput
                label="New Password"
-               value={passwd}
-               onChangeText={setPasswd}
+               value={password}
+               onChangeText={setPassword}
                secureTextEntry
-               error={!!passwdErr}
+               error={!!passwordErr}
                style={styles2.input}
-               ref={passwdEl}
+               ref={passwordEl}
              />
-             {!!passwdErr && <Text style={styles2.errorText}>{passwdErr}</Text>}
-             <Button onPress={submitPasswdUpdate} disabled={inPost} loading={inPost}>Save</Button>
-             <Button onPress={() => setUpdatePasswd(false)}>Cancel</Button>
+             {!!passwordErr && <Text style={styles2.errorText}>{passwordErr}</Text>}
+             <Button onPress={submitPasswordUpdate} disabled={inPost} loading={inPost}>Save</Button>
+             <Button onPress={() => setUpdatePassword(false)}>Cancel</Button>
            </View>
          )}
        </View>
