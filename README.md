@@ -5,8 +5,7 @@ A Curated Cat Lounge on the Upper East Side
 Warm cafe where Filipino-inspired drinks and small plates meet a serene cat lounge filled with adoptable rescue cats.
 Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave with a deeper connection to community and animals.
 
-<img width="750" height="1334" alt="image" src="./assets/images/KantoKittensLogin.png" />
-
+<img width="750" height="1334" alt="image" src="./assets/images/KantoKittensIOS17.png" />
 
 ## Local Build Testing
 
@@ -24,6 +23,7 @@ Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave wi
    ```
 
 In the output, you'll find options to open the app in a
+
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
 - [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
