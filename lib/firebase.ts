@@ -3,7 +3,7 @@ import firestore from '@react-native-firebase/firestore';
 
 // Native SDK handles initialization and persistence.
 const firebaseConfig = {
-  apiKey: "AIzaSyAyCiXKPmqnTckLMXZzjAHMfztaUokhdP4",
+  apiKey: "",
   authDomain: "kantokittensapp.firebaseapp.com",
   projectId: "kantokittensapp",
   storageBucket: "kantokittensapp.appspot.com",
