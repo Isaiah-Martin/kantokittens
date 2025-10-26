@@ -19,7 +19,7 @@ import { getDateString } from '../lib/utils';
 import { Activity, User, UserContextType } from '../navigation/RootStackParamList';
 import { styles2 } from '../styles/css';
 
-export default function BookingScreen({ navigation, route }: { navigation: any; route: any}) {
+export default function Bookings({ navigation, route }: { navigation: any; route: any}) {
   const userContext: UserContextType =  useAuth()
   const [initial, setInitial] = useState(true);
   const [activities, setActivities] = useState<Activity[]>([]);

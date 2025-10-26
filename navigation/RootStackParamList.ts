@@ -1,5 +1,3 @@
-import { NavigatorScreenParams } from '@react-navigation/native';
-import { AppTabsParamList } from './AppTabsParamList'; // Create this file as described below
 
 export interface UserJwtPayload {
     uid: string;
@@ -13,45 +11,10 @@ export interface ActivityJwtPayload {
 // Define types for the authentication stack screens
 export type AuthStackParamList = {
   Login: undefined;
-  UserJoin: undefined;
+  SignUp: undefined;
   ForgotPassword: { userEmail: string } | undefined; 
-  LogoutScreen: undefined;
-  LoginScreen: undefined;
-  UserJoinScreen: undefined; // UserJoin screen takes no parameters
-};
-
-// Define types for the main app stack, which contains the tabs
-export type AppStackParamList = {
-  AppTabs: NavigatorScreenParams<AppTabsParamList>;
-  // ... other app stack screens if any
-  Home: undefined; // Home screen takes no parameters
-  BookingScreen: undefined;
-  AddBooking: undefined;
-  UserInfoScreen: undefined;
-  LogoutScreen: undefined;
-  ActivityDetail: undefined;
-  LoginedStack: undefined;
   Logout: undefined;
-};
-
-// Define the list of screens and their parameters
-export type RootStackParamList = {
-  Home: undefined; // Home screen takes no parameters
-  UserJoinScreen: undefined; // UserJoin screen takes no parameters
-  ForgotPassword: { userEmail: string } | undefined;
-  BookingScreen: undefined;
-  AddBooking: undefined;
-  UserInfoScreen: undefined;
-  LogoutScreen: undefined;
-  LoginScreen: undefined;
-  ActivityDetail: undefined;
-  LoginedStack: undefined;
-  Login: undefined;
-  Logout: undefined;
-  // The 'AuthStack' screen's params are the param list of the auth stack
-  AuthStack: NavigatorScreenParams<AuthStackParamList>;
-  // The 'AppStack' screen's params are the param list of the main app stack
-  AppStack: NavigatorScreenParams<AppStackParamList>; 
+  UserJoin: undefined; // UserJoin screen takes no parameters
 };
 
 export interface UserData {

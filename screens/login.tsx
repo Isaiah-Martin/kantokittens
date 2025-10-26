@@ -22,7 +22,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-export default function LoginScreen({ route, navigation }: LoginScreenProps) {
+export default function Login({ route, navigation }: LoginScreenProps) {
  const { login, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

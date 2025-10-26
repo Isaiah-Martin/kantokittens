@@ -4,9 +4,9 @@ import { StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext'; // Use the custom hook
 import { auth } from '../lib/firebase';
-import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
+import { AuthStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
 
-type LogoutScreenProps = BottomTabScreenProps<RootStackParamList, 'Logout'>;
+type LogoutScreenProps = BottomTabScreenProps<AuthStackParamList, 'Logout'>;
 
 export default function LogoutScreen({ navigation, route }: LogoutScreenProps) {
   const { logout } = useAuth();

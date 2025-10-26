@@ -1,85 +1,115 @@
-import { Ionicons } from '@expo/vector-icons';
+// src/navigation/AppNavigator.tsx
+
+import { Ionicons } from '@expo/vector-icons'; // Assuming you use Expo or have installed @expo/vector-icons
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import 'react-native-gesture-handler';
-import { useAuth } from '../../context/AuthContext'; // Use the custom hook
-import { AppStackParamList, RootStackParamList } from '../../navigation/RootStackParamList';
-import BookingScreen from '../../screens/booking';
+
+// Import the correct param lists from your centralized types file
+import {
+  AppTabsParamList,
+  AuthStackParamList,
+  HomeStackParamList
+} from '../../navigation/HomeStackParamList';
+
+import { useAuth } from '../../context/AuthContext';
+import ActivityDetail from '../../screens/activitydetail';
+import Bookings from '../../screens/booking';
 import AddBooking from '../../screens/bookingadd';
 import ForgotPassword from '../../screens/forgotpassword';
 import LoadingScreen from '../../screens/loading';
-import LoginScreen from '../../screens/login';
+import Login from '../../screens/login';
 import LogoutScreen from '../../screens/logout';
-import UserJoinScreen from '../../screens/useradd';
-import UserInfoScreen from '../../screens/userinfo';
+import Settings from '../../screens/settings';
+import SignUp from '../../screens/signup';
+import Home from './index';
 
-const AuthStack = createNativeStackNavigator<RootStackParamList>();
-const AppTabs = createBottomTabNavigator<AppStackParamList>();
+// Create navigators with their specific param lists
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const AppTabs = createBottomTabNavigator<AppTabsParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+
+// Define the nested Home Stack inside a tab
+const HomeStackScreen = () => (
+  <HomeStack.Navigator>
+    <HomeStack.Screen
+      name="Home"
+      component={Home}
+      options={{ headerTitle: 'Home' }}
+    />
+    <HomeStack.Screen
+      name="Settings"
+      component={Settings}
+      options={{ headerTitle: 'My Personal Data' }}
+    />
+    <HomeStack.Screen
+      name="Booking"
+      component={Bookings}
+      options={{ headerTitle: 'My Bookings' }}
+    />
+    <HomeStack.Screen
+      name="ActivityDetail"
+      component={ActivityDetail}
+      options={{ headerTitle: 'Activity Details' }}
+    />
+    <HomeStack.Screen
+      name="AddBooking"
+      component={AddBooking}
+      options={{ headerTitle: 'Place a Booking' }}
+    />
+  </HomeStack.Navigator>
+);
 
 // Screens for unauthenticated users
 const AuthStackScreen = () => (
   <AuthStack.Navigator>
     <AuthStack.Group>
-      <AuthStack.Screen 
-          name="Login" 
-          component={LoginScreen} 
-          options={{ title: 'Login and Book Session' }}
-          />
-      <AuthStack.Screen 
-          name="UserJoinScreen" 
-          component={UserJoinScreen} 
-          options={{ title: 'Join and Book Session' }}
-          />
-      <AuthStack.Screen 
-          name="ForgotPassword" 
-          component={ForgotPassword} 
-          options={{ title: 'Send Reset Password Email' }}
-          />
-      </AuthStack.Group> 
+      <AuthStack.Screen
+        name="Login"
+        component={Login}
+        options={{ title: 'Login and Book Session' }}
+      />
+      <AuthStack.Screen
+        name="SignUp"
+        component={SignUp}
+        options={{ title: 'Join and Book Session' }}
+      />
+      <AuthStack.Screen
+        name="ForgotPassword"
+        component={ForgotPassword}
+        options={{ title: 'Send Reset Password Email' }}
+      />
+    </AuthStack.Group>
   </AuthStack.Navigator>
 );
 
-// Screens for authenticated users
+// Screens for authenticated users (the tab bar)
 const AppTabsScreen = () => (
   <AppTabs.Navigator>
     <AppTabs.Screen
-      name="BookingScreen"
-      component={BookingScreen}
-      options={{ headerTitle: 'Appointment Scheduler',
-      tabBarIcon: ({ focused, color, size }) => {
-        const iconName = focused ? 'calendar' : 'calendar-outline';
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-    }} />
+      name="Home"
+      component={Home} // Note: This uses the HomeStackScreen component
+      options={{
+        headerShown: false, // Hide the header for the nested stack
+        tabBarIcon: ({ focused, color, size }) => {
+          const iconName = focused ? 'home' : 'home-outline';
+          return <Ionicons name={iconName} size={size} color={'black'} />;
+        },
+      }}
+    />
     <AppTabs.Screen
-      name="ActivityDetail"
-      component={AddBooking}
-      options={{ headerTitle: 'Add Activity',
-      tabBarIcon: ({ focused, color, size }) => {
-        const iconName = focused ? 'ios-add-circle' : 'ios-add-circle-outline';
-        return <Ionicons text={iconName} size={size} color={color} />;
-      },
-    }} />
-    <AppTabs.Screen
-      name="UserInfoScreen"
-      component={UserInfoScreen}
-      options={{ headerTitle: 'Update My Personal Data',
-      tabBarIcon: ({ focused, color, size }) => {
-        const iconName = focused ? 'information-circle' : 'information-circle-outline';
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-    }} />
-    <AppTabs.Screen 
-      name="Logout" 
-      component={LogoutScreen} 
-      options={{ headerTitle: 'Logout', tabBarLabel: 'Logout',
-      tabBarIcon: ({ focused, color, size }) => {
-        const iconName = focused ? 'log-out' : 'log-out-outline';
-        return <Ionicons name={iconName} size={size} color={color} />;
-        }, // <- Add a comma after the function
-    }} />
-    </AppTabs.Navigator>
+      name="Logout"
+      component={LogoutScreen}
+      options={{
+        headerTitle: 'Logout',
+        tabBarLabel: 'Logout',
+        tabBarIcon: ({ focused, color, size }) => {
+          const iconName = focused ? 'log-out' : 'log-out-outline';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      }}
+    />
+  </AppTabs.Navigator>
 );
 
 export const AppNavigator = () => {

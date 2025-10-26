@@ -11,12 +11,12 @@ import {
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, TextInput } from 'react-native-paper';
 import { auth } from '../lib/firebase';
 import { addUser } from '../lib/firestore';
-import { AuthStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
+import { AuthStackParamList } from '../navigation/HomeStackParamList'; // Assuming this file exists and is correctly defined
 import { styles2 } from '../styles/css';
 
 // Use the component's own props type
-export type UserJoinScreenProps = NativeStackScreenProps<AuthStackParamList, 'UserJoinScreen'>;
-export default function UserJoinScreen({ route, navigation }: UserJoinScreenProps) {
+export type UserJoinScreenProps = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
+export default function SignUp({ route, navigation }: UserJoinScreenProps) {
  const [user, setUser] = useState({ name: '', email: '', password: '' });
   const [password2, setPassWd2] = useState('');
   const [nameerr, setNameErr] = useState('');

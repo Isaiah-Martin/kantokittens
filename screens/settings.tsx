@@ -1,27 +1,25 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import passwordValidator from 'password-validator';
 import React, { useCallback, useRef, useState } from 'react';
 import { TextInput as RNTextInput, SafeAreaView, Text, View } from 'react-native';
 import { Button, MD3LightTheme as DefaultTheme, TextInput as PaperTextInput } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 import { auth, firestore } from '../lib/firebase';
-import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming your param list type
+import { SettingsScreenProps } from '../navigation/HomeStackParamList';
 import { styles2 } from '../styles/css';
-// Correctly define the screen props using NativeStackScreenProps
-type UserInfoScreenProps = NativeStackScreenProps<RootStackParamList, 'UserInfoScreen'>;
 
-export default function UserInfo({ navigation, route }: UserInfoScreenProps) {
-  const { user, loading, login, logout } = useAuth(); // Assuming useAuth also provides a logout function
-    const [name, setName] = useState<string>('');
-    const [nameErr, setNameErr] = useState<string>('');
-    const nameEl = useRef<RNTextInput | null>(null);
-    const [password, setPassword] = useState('');
-    const [passwordErr, setPasswordErr] = useState('');
-    const passwordEl = useRef<RNTextInput | null>(null);
-    const [updateName, setUpdateName] = useState(false);
-    const [updatePassword, setUpdatePassword] = useState(false);
-    const [inPost, setInPost] = useState(false);
+export default function Settings({ navigation, route }: SettingsScreenProps) {
+  const { user, loading, login, logout } = useAuth();
+  const [name, setName] = useState<string>('');
+  const [nameErr, setNameErr] = useState<string>('');
+  const nameEl = useRef<RNTextInput | null>(null);
+  const [password, setPassword] = useState('');
+  const [passwordErr, setPasswordErr] = useState('');
+  const passwordEl = useRef<RNTextInput | null>(null);
+  const [updateName, setUpdateName] = useState(false);
+  const [updatePassword, setUpdatePassword] = useState(false);
+  const [inPost, setInPost] = useState(false);
+
 
     const theme = {
       ...DefaultTheme,

@@ -17,7 +17,7 @@ import { getDateString, timezone } from '../lib/utils';
 import { Activity, MeetingTarget } from '../navigation/RootStackParamList';
 import { styles2 } from '../styles/css';
 
-export default function AddSchedule({ navigation }: { navigation: any}) {
+export default function AddBooking({ navigation, route }: { navigation: any; route: any}) {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [titleerr, setTitleErr] = useState('');

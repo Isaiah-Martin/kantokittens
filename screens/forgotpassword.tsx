@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { Button, MD3LightTheme as DefaultTheme, TextInput } from 'react-native-paper';
 import { auth } from '../lib/firebase';
-import { RootStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
+import { AuthStackParamList } from '../navigation/RootStackParamList'; // Assuming this file exists and is correctly defined
 import { styles2 } from '../styles/css';
 
-export type ForgotPasswordScreenProps = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
+export type ForgotPasswordScreenProps = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
 export default function ForgotPassword({route, navigation}: { route: any, navigation: ForgotPasswordScreenProps}) {
     const userEmailFromRoute = route.params?.userEmail;

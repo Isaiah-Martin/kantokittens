@@ -12,7 +12,7 @@ import { AuthProvider, useAuth } from '../../context/AuthContext'; // Adjust pat
 import { styles2 } from '../../styles/css';
 import { AppNavigator } from './Navigation'; // Assuming this is your root navigator
 
-export default function HomeScreen({ navigation }: { navigation: any}) {
+export default function Home({ navigation }: { navigation: any}) {
 const { user, isLoggedIn, logout } = useAuth(); // Consume auth state from context
   const theme = {
     ...DefaultTheme,

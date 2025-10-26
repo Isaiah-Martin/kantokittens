@@ -20,7 +20,7 @@ import { getDateString, timezone } from '../lib/utils';
 import { Activity, MeetingTarget, UserContextType } from '../navigation/RootStackParamList';
 import { styles2 } from '../styles/css';
 
-export default function ActivityDetail({ navigation, route }: {navigation: any; route: any;}) {
+export default function ReviewActivity({ navigation, route }: {navigation: any; route: any;}) {
   const userContext: UserContextType =  useAuth();
   const { activityObj } = route.params || {};
   const [inEditing, setInEditing] = useState(false);
