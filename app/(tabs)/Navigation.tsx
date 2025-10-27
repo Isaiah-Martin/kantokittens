@@ -121,3 +121,5 @@ export const AppNavigator = () => {
 
   return isLoggedIn ? <AppTabsScreen /> : <AuthStackScreen />;
 };
+
+

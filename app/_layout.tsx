@@ -4,7 +4,7 @@ import { AuthProvider } from '../context/AuthContext'; // Import your AuthProvid
 import { AppNavigator } from './(tabs)/Navigation'; // Assuming this is your root navigator
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import FirebaseInitializer from '../components/FirebaseInitializer';
+import FirebaseInitializer from './FirebaseInitializer';
 
 export const unstable_settings = {
   anchor: '(tabs)',
