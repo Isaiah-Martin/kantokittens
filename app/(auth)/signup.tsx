@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { ActivityIndicator, Button, TextInput, useTheme } from 'react-native-paper';
-import { addUser } from '~/../lib/firestore';
+import { addUser } from '~/lib/firestore';
 import { useFirebase } from '../../context/FirebaseContext';
 import { User } from '../../navigation/types'; // Import the User type
 import { styles2 } from '../../styles/css'; // Assuming styles are exported
