@@ -1,29 +1,41 @@
 // app/_layout.tsx
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Href, Redirect, Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect } from 'react';
+import { Redirect, Slot, SplashScreen } from 'expo-router';
+import { useContext, useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
-import { FirebaseProvider } from '../context/FirebaseContext';
+import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
 import LoadingScreen from '../loading';
+
+// Prevent the splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync();
 
 // Component that checks authentication and redirects
 function AppAuthRedirect() {
   const { isLoggedIn, loading } = useContext(AuthContext);
+  const { isReady: firebaseIsReady } = useContext(FirebaseContext);
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  // Wait for both Firebase and Auth providers to be ready
+  useEffect(() => {
+    if (firebaseIsReady && !loading) {
+      setIsAppReady(true);
+    }
+  }, [firebaseIsReady, loading]);
 
   useEffect(() => {
-    if (!loading) {
+    if (isAppReady) {
       SplashScreen.hideAsync();
     }
-  }, [loading]);
+  }, [isAppReady]);
 
-  if (loading) {
+  if (!isAppReady) {
     return <LoadingScreen />;
   }
 
-  // Use Slot to render child routes, but redirect if not authenticated
+  // Redirect if not authenticated
   if (!isLoggedIn) {
-    return <Redirect href={"/(auth)/login" as Href} />;
+    return <Redirect href="/(auth)/login" />;
   }
 
   return <Slot />;
