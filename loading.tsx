@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Image } from 'expo-image';
 import { StyleSheet } from 'react-native';
-import { styles2 } from '../styles/css';
+import { styles2 } from './styles/css';
 
 export default function LoadingScreen() {
   return (
@@ -12,7 +12,7 @@ export default function LoadingScreen() {
           headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
           headerImage={
             <Image
-              source={require('../assets/images/KantoKittens.png')}
+              source={require('./assets/images/KantoKittens.png')}
               style={styles.reactLogo}
             />
           }>

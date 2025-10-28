@@ -5,7 +5,6 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -26,16 +25,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={'black'} />,
         }}
       />
-
       <Tabs.Screen
-        name="Navigation"
+        name="booking"
         options={{
           title: 'Book',
           tabBarActiveBackgroundColor: '#D98CBF',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="document.badge.clock" color={'black'} />,
         }}
       />
-
       <Tabs.Screen
         name="explore"
         options={{
@@ -45,6 +42,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="figure.yoga.circle.fill" color={'black'} />,
         }}
       />
+      {/* Additional tabs like `logout` can be here if desired */}
     </Tabs>
   );
 }

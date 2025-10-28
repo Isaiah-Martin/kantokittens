@@ -1,7 +1,7 @@
 import { Timestamp } from '@react-native-firebase/firestore';
 import { useFocusEffect } from '@react-navigation/native';
 import validator from 'email-validator';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   Keyboard,
   SafeAreaView,
@@ -11,14 +11,17 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, Switch, TextInput } from 'react-native-paper';
-import { useAuth } from '../context/AuthContext';
-import { firestore } from '../lib/firebase';
-import { getDateString, timezone } from '../lib/utils';
-import { Activity, MeetingTarget } from '../navigation/RootStackParamList';
-import { styles2 } from '../styles/css';
 
-export default function AddBooking({ navigation, route }: { navigation: any; route: any}) {
-  const { user } = useAuth();
+import { AuthContext } from '@context/AuthContext';
+import { useFirebase } from '@context/FirebaseContext'; // Import useFirebase hook
+import { useContext, useRef, useState } from 'react';
+import { getDateString, timezone } from '../../../../lib/utils';
+import { Activity, MeetingTarget } from '../../../../navigation/RootStackParamList';
+import { styles2 } from '../../../../styles/css';
+
+export default function AddBooking({ navigation, route }: { navigation: any; route: any }) {
+  const { user } = useContext(AuthContext);
+  const { firestore } = useFirebase(); // Use useFirebase to get firestore instance
   const [title, setTitle] = useState('');
   const [titleerr, setTitleErr] = useState('');
   const titleEl = useRef(null);
@@ -192,6 +195,10 @@ export default function AddBooking({ navigation, route }: { navigation: any; rou
       if (!user || !user.uid) {
         throw new Error("User not authenticated.");
       }
+      if (!firestore) {
+        console.error("Firestore instance is not available.");
+        return;
+      }
 
       const newActivity = {
       title: title.trim(),
@@ -207,7 +214,7 @@ export default function AddBooking({ navigation, route }: { navigation: any; rou
     
     // 2. Add the document using the native SDK's API
     // firestore() gets the default Firestore instance.
-    const docRef = await firestore().collection('activities').add(newActivity);
+    const docRef = await firestore.collection('activities').add(newActivity);
     
     // 3. Update local state
     const newActivityWithId = {

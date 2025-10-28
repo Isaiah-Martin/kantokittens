@@ -1,12 +1,12 @@
 // lib/firebaseConfig.ts
 const firebaseConfig = {
-  apiKey: "AIzaSyAyCiXKPmqnTckLMXZzjAHMfztaUokhdP4",
-  authDomain: "kantokittensapp.firebaseapp.com",
-  projectId: "kantokittensapp",
-  storageBucket: "kantokittensapp.appspot.com",
-  messagingSenderId: "1056869055055",
-  appId: "1:1056869055055:ios:1a113930cccc98858a483az",
-  databaseURL: '',
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
 export { firebaseConfig };

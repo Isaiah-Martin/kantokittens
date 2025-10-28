@@ -1,29 +1,25 @@
 // app/_layout.tsx
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Href, Redirect, Slot, SplashScreen } from 'expo-router';
+import { Slot, SplashScreen } from 'expo-router';
 import { useContext, useEffect } from 'react';
 import 'react-native-reanimated';
-import { AuthContext, AuthProvider } from '../context/AuthContext';
-import { FirebaseProvider } from '../context/FirebaseContext';
-import LoadingScreen from '../loading';
+import { AuthContext, AuthProvider } from './context/AuthContext';
+import { FirebaseProvider } from './context/FirebaseContext';
+import LoadingScreen from './loading';
 
-// Component that checks authentication and redirects
-function AppAuthRedirect() {
+// The main layout wrapper for providers
+function LayoutWithProviders() {
   const { isLoggedIn, loading } = useContext(AuthContext);
 
+  // Keep the splash screen visible while loading authentication state
   useEffect(() => {
-    if (!loading) {
+    if (loading === false) {
       SplashScreen.hideAsync();
     }
   }, [loading]);
 
   if (loading) {
     return <LoadingScreen />;
-  }
-
-  // Use Slot to render child routes, but redirect if not authenticated
-  if (!isLoggedIn) {
-    return <Redirect href={"/(auth)/login" as Href} />;
   }
 
   return <Slot />;
@@ -36,7 +32,7 @@ export default function RootLayout() {
   return (
     <FirebaseProvider>
       <AuthProvider>
-        <AppAuthRedirect />
+        <LayoutWithProviders />
       </AuthProvider>
     </FirebaseProvider>
   );

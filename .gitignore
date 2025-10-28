@@ -44,6 +44,7 @@ app-example
 # Firebase-related files
 # These files contain sensitive configuration information.
 # They are unique to your project and should not be committed to Git.
+.env
 GoogleService-Info.plist
 google-services.json
 firebase.ts

@@ -1,49 +1,49 @@
 // src/context/FirebaseContext.tsx
-
-import {
-  getApp,
-  getApps,
-  initializeApp,
-} from '@react-native-firebase/app';
+import { getApp, getApps, initializeApp } from '@react-native-firebase/app';
 import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
 import { FirebaseFirestoreTypes, getFirestore } from '@react-native-firebase/firestore';
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { firebaseConfig } from '../lib/firebaseConfig'; // Your firebase config
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { firebaseConfig } from '../lib/firebaseConfig';
+import LoadingScreen from '../loading';
 
-// Use ReturnType to get the correct FirebaseApp type from the getApp function
 type FirebaseAppType = ReturnType<typeof getApp>;
+type Firestore = FirebaseFirestoreTypes.Module;
+type Auth = FirebaseAuthTypes.Module; // Use FirebaseAuthTypes.Module instead of Auth
 
-// Define the type for the context's value
 interface FirebaseContextProps {
   app: FirebaseAppType | null;
-  auth: FirebaseAuthTypes.Module | null;
-  firestore: FirebaseFirestoreTypes.Module | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
 }
 
-// Create the context with a default (null) value
 const FirebaseContext = createContext<FirebaseContextProps>({
   app: null,
   auth: null,
   firestore: null,
 });
 
-// Create a hook to consume the context
 export const useFirebase = () => useContext(FirebaseContext);
 
-// Create the provider component
-export const FirebaseProvider = ({ children }: { children: React.ReactNode }) => {
+export const FirebaseProvider = ({ children }: { children: ReactNode }) => {
   const [app, setApp] = useState<FirebaseAppType | null>(null);
-  const [auth, setAuth] = useState<FirebaseAuthTypes.Module | null>(null);
-  const [firestore, setFirestore] = useState<FirebaseFirestoreTypes.Module | null>(null);
+  const [auth, setAuth] = useState<Auth | null>(null);
+  const [firestore, setFirestore] = useState<Firestore | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    function initialize() {
+    async function initialize() {
       try {
+        if (
+          !firebaseConfig.apiKey ||
+          !firebaseConfig.authDomain ||
+          !firebaseConfig.projectId ||
+          !firebaseConfig.appId
+        ) {
+          throw new Error('Firebase environment variables are missing or incomplete.');
+        }
         let initializedApp: FirebaseAppType;
         if (!getApps().length) {
-          // Explicitly cast to `unknown` first to safely handle the type mismatch
-          initializedApp = initializeApp(firebaseConfig) as unknown as FirebaseAppType;
+          initializedApp = await initializeApp(firebaseConfig as any);
         } else {
           initializedApp = getApp();
         }
@@ -54,18 +54,16 @@ export const FirebaseProvider = ({ children }: { children: React.ReactNode }) =>
         setApp(initializedApp);
         setAuth(initializedAuth);
         setFirestore(initializedFirestore);
-        console.log('Firebase initialized in context.');
-      } catch (e) {
-        console.error('Firebase initialization error in context:', e);
-      } finally {
         setIsReady(true);
+      } catch (e) {
+        console.error('Firebase initialization error:', e);
       }
     }
     initialize();
   }, []);
 
   if (!isReady) {
-    return null;
+    return <LoadingScreen />;
   }
 
   return (

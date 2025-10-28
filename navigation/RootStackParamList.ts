@@ -17,32 +17,6 @@ export type AuthStackParamList = {
   UserJoin: undefined; // UserJoin screen takes no parameters
 };
 
-export interface UserData {
-    uid: string;
-    email: string;
-    name: string;
-    password: string;
-    created: string;
-    token: string;
-}
-
-export interface UserContextType {
-    isLoggedIn: boolean; 
-    user: User | null;
-    login: (email: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
-    loading: boolean;
-}
-
-
-export interface User {
-    uid?: string;
-    email?: string;
-    name?: string;
-    token?: string;
-    logintime?: number;
-}
-
 export interface Activity {
     id: string;
     title: string;
