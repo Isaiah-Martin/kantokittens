@@ -3,11 +3,13 @@ module.exports = ({ config }) => {
   const newConfig = { ...config };
   newConfig.ios = {
     ...newConfig.ios,
-    googleServicesFile: process.env.GOOGLE_SERVICES_PLIST,
+    // Use the EAS secret in builds, local file for prebuild
+    googleServicesFile: process.env.GOOGLE_SERVICES_PLIST || './GoogleService-Info.plist',
   };
   newConfig.android = {
     ...newConfig.android,
-    googleServicesFile: process.env.GOOGLE_SERVICES_JSON,
+    // Use the EAS secret in builds, local file for prebuild
+    googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './google-services.json',
   };
   return newConfig;
 };
