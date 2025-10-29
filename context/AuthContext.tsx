@@ -1,12 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
 
-// Create the context with a default value
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
@@ -15,11 +14,11 @@ export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
 });
 
-// Create the provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitialLoadRef = useRef(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
@@ -76,18 +75,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseIsReady || !auth || !firestore) {
       return;
     }
-    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      if (firebaseUser) {
-        const userData = await getUser(firestore, firebaseUser.uid);
-        if (userData) {
-          setUser(userData);
+
+    // Use a ref to ensure the initialization logic runs only once
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+        if (firebaseUser) {
+          const userData = await getUser(firestore, firebaseUser.uid);
+          if (userData) {
+            setUser(userData);
+          }
+        } else {
+          setUser(null);
         }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-    return () => subscriber();
+        setLoading(false);
+      });
+      return () => subscriber();
+    }
   }, [auth, firebaseIsReady, firestore]);
 
   // Wait for the initial loading check to complete
@@ -102,5 +106,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Create a hook to use the authentication context
 export const useAuth = () => useContext(AuthContext);
