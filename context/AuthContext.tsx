@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
     setLoading(true);
     try {
@@ -46,7 +45,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth, firestore]);
 
-  // Memoize the logout function
   const logout = useMemo(() => async () => {
     try {
       if (!auth) {
@@ -68,35 +66,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoggedIn: !!user,
   }), [user, loading, login, logout]);
 
-  // Handle initial user loading (on app start)
   useEffect(() => {
-    console.log("AuthProvider useEffect running. firebaseIsReady:", firebaseIsReady);
-
-    // Timeout for debugging, using a compatible type
-    let timeout: any = null;
-    if (!firebaseIsReady) {
-      timeout = setTimeout(() => {
-        console.error("AuthProvider initialization timed out. Something is wrong.");
-        setLoading(false);
-      }, 10000);
+    if (!firebaseIsReady || !auth || !firestore) {
       return;
     }
-
-    if (!auth || !firestore) {
-      setLoading(false);
-      return;
-    }
-
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      clearTimeout(timeout);
       console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
       if (firebaseUser) {
-        try {
-          const userData = await getUser(firestore, firebaseUser.uid);
+        const userData = await getUser(firestore, firebaseUser.uid);
+        if (userData) {
           setUser(userData);
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          setUser(null);
         }
       } else {
         setUser(null);
@@ -104,13 +83,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    return () => {
-      clearTimeout(timeout);
-      subscriber();
-    };
+    return () => subscriber();
   }, [auth, firebaseIsReady, firestore]);
 
-  // Wait for the initial authentication check to complete
   if (loading) {
     return null;
   }
