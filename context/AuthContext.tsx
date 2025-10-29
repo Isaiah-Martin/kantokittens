@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
@@ -71,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle initial user loading (on app start)
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: any = null; // Use `any` for cross-environment compatibility
     let subscriber: () => void;
 
     if (!firebaseIsReady || !auth || !firestore) {
@@ -97,7 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => {
-      clearTimeout(timeoutId!);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       if (subscriber) {
         subscriber();
       }
