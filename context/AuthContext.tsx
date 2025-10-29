@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -61,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!firebaseIsReady) {
-      return; // Do nothing until Firebase is initialized
+      return;
     }
 
     if (!auth || !firestore) {
@@ -70,61 +69,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    let isMounted = true;
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      let isMounted = true; // Use a flag to prevent state updates on unmounted component
+      try {
+        if (!isMounted) return; // Guard against updates on an unmounted component
 
-      if (isMounted) {
-        try {
-          if (firebaseUser) {
-            const userData = await getUser(firestore, firebaseUser.uid);
-            if (isMounted) {
-              setUser(userData || null);
-            }
-          } else {
-            if (isMounted) {
-              setUser(null);
-            }
+        if (firebaseUser) {
+          const userData = await getUser(firestore, firebaseUser.uid);
+          if (isMounted) {
+            setUser(userData || null);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
+        } else {
           if (isMounted) {
             setUser(null);
           }
-        } finally {
-          if (isMounted) {
-            setLoading(false);
-          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
         }
       }
     });
 
     return () => {
-      // Clean-up function to prevent state updates on unmounted component
+      isMounted = false; // Set to false on unmount
       subscriber();
     };
   }, [auth, firebaseIsReady, firestore]);
-
-  if (loading) {
-    // Return a full-screen loading view, blocking all other renders
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
 
   return (
     <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff', // Set a background color to prevent flicker
-  },
-});
 
 export const useAuth = () => useContext(AuthContext);

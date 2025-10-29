@@ -1,14 +1,13 @@
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect } from 'react';
+import * as SystemUI from 'expo-system-ui';
+import { useContext, useEffect, useState } from 'react'; // Import useState
 import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
 import LoadingScreen from '../loading';
 
-// Prevent the splash screen from auto-hiding immediately.
-// This should be called in the global scope, outside of any components.
+// Prevent the native splash screen from auto-hiding immediately.
 SplashScreen.preventAutoHideAsync();
 
 // Silence unnecessary logs in development
@@ -21,17 +20,16 @@ function AppAuthRedirect() {
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
 
-  // A single variable to track if all necessary data is loaded
   const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    // Hide the splash screen only when loading is complete
+    // Hide the splash screen only when all loading is truly complete
     if (!isLoading) {
       SplashScreen.hideAsync();
     }
   }, [isLoading]);
 
-  // While loading, show the loading screen
+  // While loading, show the custom loading screen
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -47,12 +45,31 @@ function AppAuthRedirect() {
 
 // The root component that sets up all the context providers
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // Use expo-system-ui to ensure a consistent background color immediately
+        await SystemUI.setBackgroundColorAsync("#ffffff"); // Match your native splash background
+        // You would load any custom fonts or other assets here
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+    prepare();
+  }, []);
+
+  if (!appIsReady) {
+    // Return null while assets are loading, keeping the native splash screen visible
+    return null;
+  }
 
   return (
     <FirebaseProvider>
       <AuthProvider>
-        {/* Render the authentication-checking component within the providers */}
         <AppAuthRedirect />
       </AuthProvider>
     </FirebaseProvider>
