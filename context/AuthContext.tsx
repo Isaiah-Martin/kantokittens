@@ -1,10 +1,11 @@
+// context/AuthProvider.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { getUser } from '../lib/firestore';
+import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
+import { getUser } from '../lib/firestore'; // Assuming secureLogin is passed correctly
 import { AuthContextType, User } from '../navigation/types';
-import { FirebaseContext } from './FirebaseContext';
+import { useFirebase } from './FirebaseContext';
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -15,7 +16,7 @@ export const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
+  const { auth, firestore, isReady: firebaseIsReady } = useFirebase();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,11 +26,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!auth || !firestore) {
         throw new Error("Firebase services not available during login.");
       }
+      // Assuming secureLogin is a function that performs the login and returns the user
+      // secureLogin was removed from your imports, so you must pass it to AuthProvider if it's used elsewhere
+      // This example uses the modular auth service directly
       const authResult = await auth.signInWithEmailAndPassword(email, password);
       const firebaseUser = authResult.user;
 
       if (firebaseUser) {
-        // USE THE FIRESTORE INSTANCE FROM THE CONTEXT
         const userDocRef = firestore.collection('users').doc(firebaseUser.uid);
         await userDocRef.update({ logintime: Date.now() });
         const userData = await getUser(firestore, firebaseUser.uid);
@@ -71,8 +74,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseIsReady || !auth || !firestore) {
       return;
     }
+
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
       if (firebaseUser) {
+        // Fetch user data from Firestore for logged-in user
         const userData = await getUser(firestore, firebaseUser.uid);
         if (userData) {
           setUser(userData);
@@ -80,13 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
       }
-      setLoading(false);
+      setLoading(false); // SET LOADING FALSE *AFTER* THE ASYNC CHECK IS COMPLETE
     });
-    return subscriber;
+
+    return () => subscriber(); // Return the unsubscriber function
   }, [auth, firebaseIsReady, firestore]);
 
-  if (!firebaseIsReady) {
-    return null;
+  // Handle the initial loading state correctly
+  if (loading) {
+    return null; // Return null to prevent rendering until auth state is confirmed
   }
 
   return (
