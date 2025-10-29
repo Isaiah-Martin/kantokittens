@@ -17,11 +17,11 @@ export const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
-    setAuthLoading(true);
+    setLoading(true);
     try {
       if (!auth || !firestore) {
         throw new Error("Firebase services not available during login.");
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Login failed:', error);
       throw error;
     } finally {
-      setAuthLoading(false);
+      setLoading(false);
     }
   }, [auth, firestore]);
 
@@ -60,9 +60,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth]);
 
+  const value = useMemo(() => ({
+    user,
+    loading,
+    login,
+    logout,
+    isLoggedIn: !!user,
+  }), [user, loading, login, logout]);
+
   // Handle initial user loading (on app start)
   useEffect(() => {
     if (!firebaseIsReady || !auth || !firestore) {
+      // If Firebase services are not available, set loading to false and return.
+      // This is a failsafe to prevent getting stuck.
+      setLoading(false);
       return;
     }
 
@@ -75,23 +86,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
       }
-      setAuthLoading(false);
+      setLoading(false);
     });
 
     return () => subscriber();
   }, [auth, firebaseIsReady, firestore]);
 
-  const isLoggedIn = !!user;
-
-  const value = useMemo(() => ({
-    user,
-    loading: authLoading,
-    login,
-    logout,
-    isLoggedIn,
-  }), [user, authLoading, login, logout, isLoggedIn]);
-
-  if (authLoading) {
+  // Wait for the initial loading check to complete
+  if (loading) {
     return null;
   }
 
