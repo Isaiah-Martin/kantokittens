@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
+// ADD useRef TO THE IMPORT STATEMENT
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
@@ -18,7 +19,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const isInitialCheckRef = useRef(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
@@ -69,22 +69,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoggedIn: !!user,
   }), [user, loading, login, logout]);
 
-  // Handle initial user loading (on app start)
+  // Use a ref to store the subscriber function
+  const subscriberRef = useRef<() => void | null>(null);
+
   useEffect(() => {
-    // Only proceed if Firebase is ready.
-    if (!firebaseIsReady) {
-      return;
-    }
-
-    if (!auth || !firestore) {
-      setLoading(false);
-      console.error("Firebase services not available after being marked ready.");
-      return;
-    }
-
-    // Use a ref to ensure the initialization logic runs only once
-    if (isInitialCheckRef.current) {
-      isInitialCheckRef.current = false;
+    if (firebaseIsReady && auth && firestore) {
+      // If a subscriber already exists, return early to prevent multiple subscriptions.
+      if (subscriberRef.current) {
+        return;
+      }
 
       const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
         console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
@@ -98,11 +91,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setLoading(false);
       });
-      return () => subscriber();
+
+      // Store the new subscriber in the ref.
+      subscriberRef.current = subscriber;
+
+      // Unsubscribe on unmount or on re-run if dependencies change.
+      return () => {
+        if (subscriberRef.current) {
+          subscriberRef.current();
+          subscriberRef.current = null;
+        }
+      };
     }
   }, [auth, firebaseIsReady, firestore]);
 
-  // Wait for the initial loading check to complete
   if (loading) {
     return null;
   }
