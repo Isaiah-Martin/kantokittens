@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
+// Import ReactNode here
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native'; // Import UI components
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -14,16 +16,18 @@ export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
 });
 
+// Correct the type definition for the props here
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
     setLoading(true);
     try {
       if (!auth || !firestore) {
-        throw new Error("Firebase services not available during login.");
+        throw new Error('Firebase services not available during login.');
       }
       const authResult = await auth.signInWithEmailAndPassword(email, password);
       const firebaseUser = authResult.user;
@@ -44,10 +48,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth, firestore]);
 
+  // Memoize the logout function
   const logout = useMemo(() => async () => {
     try {
       if (!auth) {
-        throw new Error("Auth service not available during logout.");
+        throw new Error('Auth service not available during logout.');
       }
       await auth.signOut();
       await AsyncStorage.removeItem('user');
@@ -60,15 +65,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(() => ({ user, loading, login, logout, isLoggedIn: !!user }), [user, loading, login, logout]);
 
   useEffect(() => {
-    // Only proceed when Firebase is ready
-    if (!firebaseIsReady || !auth || !firestore) {
+    if (!firebaseIsReady) {
       return;
     }
 
+    if (!auth || !firestore) {
+      setLoading(false);
+      console.error('Firebase services not available after being marked ready.');
+      return;
+    }
     // `onAuthStateChanged` returns an unsubscribe function.
-    // This is the correct way to handle subscriptions in `useEffect`.
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
+      console.log('onAuthStateChanged triggered. User:', firebaseUser ? 'exists' : 'null');
       if (firebaseUser) {
         const userData = await getUser(firestore, firebaseUser.uid);
         if (userData) {
@@ -81,22 +89,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // `useEffect` cleanup function. This will be called on component unmount
-    // or before the effect runs again (e.g., if `auth` or `firestore` changes).
     return () => {
       subscriber();
     };
-  }, [auth, firestore, firebaseIsReady]);
+  }, [auth, firebaseIsReady, firestore]);
 
-  // Use a different loading approach to avoid potential rendering issues
   if (loading) {
-    return null; // Or a loading screen component
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export const useAuth = () => useContext(AuthContext);
