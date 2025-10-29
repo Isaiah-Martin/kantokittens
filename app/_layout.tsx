@@ -1,35 +1,26 @@
+// app/_layout.tsx
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect, useState } from 'react'; // Added useState
+import { useContext, useEffect } from 'react';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
 import LoadingScreen from '../loading';
 
-// Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-// Component that checks authentication and redirects
 function AppAuthRedirect() {
   const { isLoggedIn, loading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
-  const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    // Only set the app as ready when both Firebase and Auth are ready.
+    // Only hide the splash screen and allow rendering once both contexts are finished loading
     if (firebaseIsReady && !loading) {
-      setIsAppReady(true);
+      SplashScreen.hideAsync();
     }
   }, [firebaseIsReady, loading]);
 
-  useEffect(() => {
-    // Hide the splash screen only after the app is confirmed ready.
-    if (isAppReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [isAppReady]);
-
-  if (!isAppReady) {
+  if (!firebaseIsReady || loading) {
     return <LoadingScreen />;
   }
 
@@ -40,7 +31,6 @@ function AppAuthRedirect() {
   return <Slot />;
 }
 
-// The root component that sets up all the context providers
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
