@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitialLoadRef = useRef(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
@@ -60,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth]);
 
+  // Memoize the context value
   const value = useMemo(() => ({
     user,
     loading,
@@ -70,39 +72,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle initial user loading (on app start)
   useEffect(() => {
-    let timeoutId: any = null; // Use `any` for cross-environment compatibility
-    let subscriber: () => void;
-
     if (!firebaseIsReady || !auth || !firestore) {
-      // Set a failsafe timeout to ensure loading state resolves
-      timeoutId = setTimeout(() => {
-        setLoading(false);
-        console.error("Auth context failed to initialize within timeout.");
-      }, 5000); // 5-second timeout
       return;
     }
 
-    subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      clearTimeout(timeoutId!); // Clear timeout if subscriber is successful
-      if (firebaseUser) {
-        const userData = await getUser(firestore, firebaseUser.uid);
-        if (userData) {
-          setUser(userData);
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+        if (firebaseUser) {
+          const userData = await getUser(firestore, firebaseUser.uid);
+          if (userData) {
+            setUser(userData);
+          }
+        } else {
+          setUser(null);
         }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      if (subscriber) {
-        subscriber();
-      }
-    };
+        setLoading(false);
+      });
+      return () => subscriber();
+    }
   }, [auth, firebaseIsReady, firestore]);
 
   // Wait for the initial loading check to complete
