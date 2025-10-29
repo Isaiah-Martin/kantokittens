@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
     setLoading(true);
     try {
@@ -28,7 +27,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       const authResult = await auth.signInWithEmailAndPassword(email, password);
       const firebaseUser = authResult.user;
-
       if (firebaseUser) {
         const userDocRef = firestore.collection('users').doc(firebaseUser.uid);
         await userDocRef.update({ logintime: Date.now() });
@@ -46,7 +44,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth, firestore]);
 
-  // Memoize the logout function
   const logout = useMemo(() => async () => {
     try {
       if (!auth) {
@@ -60,32 +57,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth]);
 
-  const value = useMemo(() => ({
-    user,
-    loading,
-    login,
-    logout,
-    isLoggedIn: !!user,
-  }), [user, loading, login, logout]);
-
-  // Use a ref to store the subscriber function
-  const subscriberRef = useRef<() => void | null>(null);
+  const value = useMemo(() => ({ user, loading, login, logout, isLoggedIn: !!user }), [user, loading, login, logout]);
 
   useEffect(() => {
-    if (!firebaseIsReady) {
-      return;
-    }
-    
-    if (subscriberRef.current) {
+    // Only proceed when Firebase is ready
+    if (!firebaseIsReady || !auth || !firestore) {
       return;
     }
 
-    if (!auth || !firestore) {
-      setLoading(false);
-      console.error("Firebase services not available after being marked ready.");
-      return;
-    }
-
+    // `onAuthStateChanged` returns an unsubscribe function.
+    // This is the correct way to handle subscriptions in `useEffect`.
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
       console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
       if (firebaseUser) {
@@ -99,18 +80,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    subscriberRef.current = subscriber;
-
+    // `useEffect` cleanup function. This will be called on component unmount
+    // or before the effect runs again (e.g., if `auth` or `firestore` changes).
     return () => {
-      if (subscriberRef.current) {
-        subscriberRef.current();
-        subscriberRef.current = null;
-      }
+      subscriber();
     };
-  }, [auth, firebaseIsReady, firestore]);
+  }, [auth, firestore, firebaseIsReady]);
 
+  // Use a different loading approach to avoid potential rendering issues
   if (loading) {
-    return null;
+    return null; // Or a loading screen component
   }
 
   return (
