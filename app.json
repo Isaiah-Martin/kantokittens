@@ -18,8 +18,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#808080",
-        "backgroundImage": "./assets/images/KantoKittensCover.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/images/KantoKittensCover.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -45,9 +45,8 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/KantoKittensCover.png",
-          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#808080",
+          "backgroundColor": "#ffffff",
           "dark": {
             "backgroundColor": "#000000"
           }
