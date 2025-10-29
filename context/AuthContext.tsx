@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-// ADD useRef TO THE IMPORT STATEMENT
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
@@ -73,36 +72,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const subscriberRef = useRef<() => void | null>(null);
 
   useEffect(() => {
-    if (firebaseIsReady && auth && firestore) {
-      // If a subscriber already exists, return early to prevent multiple subscriptions.
-      if (subscriberRef.current) {
-        return;
-      }
-
-      const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-        console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
-        if (firebaseUser) {
-          const userData = await getUser(firestore, firebaseUser.uid);
-          if (userData) {
-            setUser(userData);
-          }
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      });
-
-      // Store the new subscriber in the ref.
-      subscriberRef.current = subscriber;
-
-      // Unsubscribe on unmount or on re-run if dependencies change.
-      return () => {
-        if (subscriberRef.current) {
-          subscriberRef.current();
-          subscriberRef.current = null;
-        }
-      };
+    if (!firebaseIsReady) {
+      return;
     }
+    
+    if (subscriberRef.current) {
+      return;
+    }
+
+    if (!auth || !firestore) {
+      setLoading(false);
+      console.error("Firebase services not available after being marked ready.");
+      return;
+    }
+
+    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+      console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
+      if (firebaseUser) {
+        const userData = await getUser(firestore, firebaseUser.uid);
+        if (userData) {
+          setUser(userData);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    subscriberRef.current = subscriber;
+
+    return () => {
+      if (subscriberRef.current) {
+        subscriberRef.current();
+        subscriberRef.current = null;
+      }
+    };
   }, [auth, firebaseIsReady, firestore]);
 
   if (loading) {
