@@ -1,6 +1,6 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
@@ -18,31 +18,30 @@ if (__DEV__) {
 
 // Component that checks authentication and redirects
 function AppAuthRedirect() {
-  const { isLoggedIn, loading } = useContext(AuthContext);
+  const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
-  const [isAppReady, setIsAppReady] = useState(false);
+
+  // A single variable to track if all necessary data is loaded
+  const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    // Only proceed once both Firebase and Auth contexts are ready
-    if (firebaseIsReady && !loading && !isAppReady) {
-      // Set the app as ready and hide the splash screen
-      setIsAppReady(true);
+    // Hide the splash screen only when loading is complete
+    if (!isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [firebaseIsReady, loading, isAppReady]); // isAppReady is a crucial dependency here
+  }, [isLoading]);
 
-  // If the app is not ready, return a loading indicator
-  // This prevents rendering content prematurely, which can cause flicker.
-  if (!isAppReady) {
+  // While loading, show the loading screen
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // Once ready, check authentication and redirect
+  // Once loading is complete, handle authentication and redirect
   if (!isLoggedIn) {
     return <Redirect href="/(auth)/login" />;
   }
 
-  // If authenticated, show the main application content
+  // If logged in, show the main app content
   return <Slot />;
 }
 

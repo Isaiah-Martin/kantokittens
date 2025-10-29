@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -20,12 +20,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Added log to track the Provider's lifecycle and current loading state
-  console.log('AuthProvider rendered. Loading:', loading);
-  
   const login = useMemo(() => async (email: string, password: string) => {
     setLoading(true);
-    console.log('Attempting login...');
     try {
       if (!auth || !firestore) {
         throw new Error('Firebase services not available during login.');
@@ -33,9 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const authResult = await auth.signInWithEmailAndPassword(email, password);
       const firebaseUser = authResult.user;
       if (firebaseUser) {
-        console.log('Login successful. Fetching user data...');
-        const userDocRef = firestore.collection('users').doc(firebaseUser.uid);
-        await userDocRef.update({ logintime: Date.now() });
+        await firestore.collection('users').doc(firebaseUser.uid).update({ logintime: Date.now() });
         const userData = await getUser(firestore, firebaseUser.uid);
         if (userData) {
           await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -47,7 +41,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     } finally {
       setLoading(false);
-      console.log('Login attempt finished. Loading set to false.');
     }
   }, [auth, firestore]);
 
@@ -59,7 +52,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await auth.signOut();
       await AsyncStorage.removeItem('user');
       setUser(null);
-      console.log('Logged out successfully.');
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -68,10 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(() => ({ user, loading, login, logout, isLoggedIn: !!user }), [user, loading, login, logout]);
 
   useEffect(() => {
-    console.log('useEffect triggered. Checking firebase readiness...');
     if (!firebaseIsReady) {
-      console.log('Firebase not ready yet. Exiting useEffect.');
-      return;
+      return; // Do nothing until Firebase is initialized
     }
 
     if (!auth || !firestore) {
@@ -81,40 +71,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      console.log('onAuthStateChanged triggered. User:', firebaseUser ? 'exists' : 'null');
-      if (firebaseUser) {
-        console.log('User found:', firebaseUser.uid);
-        const userData = await getUser(firestore, firebaseUser.uid);
-        if (userData) {
-          setUser(userData);
-          console.log('User data loaded:', userData);
-        } else {
-          console.log('No user data found in Firestore.');
+      let isMounted = true; // Use a flag to prevent state updates on unmounted component
+
+      if (isMounted) {
+        try {
+          if (firebaseUser) {
+            const userData = await getUser(firestore, firebaseUser.uid);
+            if (isMounted) {
+              setUser(userData || null);
+            }
+          } else {
+            if (isMounted) {
+              setUser(null);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          if (isMounted) {
+            setUser(null);
+          }
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
         }
-      } else {
-        setUser(null);
-        console.log('No user logged in.');
       }
-      setLoading(false);
-      console.log('onAuthStateChanged listener finished. Loading set to false.');
     });
 
     return () => {
-      console.log('Cleaning up auth state listener.');
+      // Clean-up function to prevent state updates on unmounted component
       subscriber();
     };
   }, [auth, firebaseIsReady, firestore]);
 
-  console.log('Rendering AuthProvider. Current loading state:', loading);
   if (loading) {
-    console.log('Rendering loading screen with simple View.');
+    // Return a full-screen loading view, blocking all other renders
     return (
-      <View style={{ flex: 1, backgroundColor: 'white' }} />
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
     );
   }
-  
-  console.log('Authentication check complete. Rendering children.');
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -122,6 +123,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#ffffff', // Set a background color to prevent flicker
   },
 });
 
