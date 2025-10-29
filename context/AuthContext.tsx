@@ -1,3 +1,4 @@
+// context/AuthContext.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
@@ -70,14 +71,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle initial user loading (on app start)
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let subscriber: () => void;
+
     if (!firebaseIsReady || !auth || !firestore) {
-      // If Firebase services are not available, set loading to false and return.
-      // This is a failsafe to prevent getting stuck.
-      setLoading(false);
+      // Set a failsafe timeout to ensure loading state resolves
+      timeoutId = setTimeout(() => {
+        setLoading(false);
+        console.error("Auth context failed to initialize within timeout.");
+      }, 5000); // 5-second timeout
       return;
     }
 
-    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+    subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+      clearTimeout(timeoutId!); // Clear timeout if subscriber is successful
       if (firebaseUser) {
         const userData = await getUser(firestore, firebaseUser.uid);
         if (userData) {
@@ -89,7 +96,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    return () => subscriber();
+    return () => {
+      clearTimeout(timeoutId!);
+      if (subscriber) {
+        subscriber();
+      }
+    };
   }, [auth, firebaseIsReady, firestore]);
 
   // Wait for the initial loading check to complete

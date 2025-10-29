@@ -23,7 +23,6 @@ function AppAuthRedirect() {
   }, [firebaseIsReady, loading]);
 
   if (!firebaseIsReady || loading) {
-    // RETURN THE LOADING SCREEN HERE
     return <LoadingScreen />;
   }
 
