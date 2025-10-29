@@ -1,3 +1,9 @@
+// app/_layout.tsx
+
+// Add this line at the very top of the file
+(globalThis as any).RNFB_MODULAR_DEPRECATION_STRICT_MODE = true;
+
+// The rest of your imports and code follow
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
@@ -45,7 +51,6 @@ export default function RootLayout() {
   return (
     <FirebaseProvider>
       <AuthProvider>
-        {/* Pass your actual app content to the redirection component */}
         <AppAuthRedirect />
       </AuthProvider>
     </FirebaseProvider>
