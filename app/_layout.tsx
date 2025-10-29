@@ -6,7 +6,7 @@
 // The rest of your imports and code follow
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
@@ -19,13 +19,9 @@ SplashScreen.preventAutoHideAsync();
 function AppAuthRedirect() {
   const { isLoggedIn, loading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
-  const [isAppReady, setIsAppReady] = useState(false);
 
-  useEffect(() => {
-    if (firebaseIsReady && !loading) {
-      setIsAppReady(true);
-    }
-  }, [firebaseIsReady, loading]);
+  // Synchronous check for all loading conditions
+  const isAppReady = firebaseIsReady && !loading;
 
   useEffect(() => {
     if (isAppReady) {

@@ -1,13 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { onAuthStateChanged } from '@react-native-firebase/auth'; // MODULAR import
-import { getFirestore } from '@react-native-firebase/firestore'; // MODULAR import
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react'; // Added useContext
-import { getUser } from '../lib/firestore'; // Removed secureLogin as it will be called differently
+import { onAuthStateChanged } from '@react-native-firebase/auth';
+import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
-import { FirebaseContext } from './FirebaseContext'; // Import FirebaseContext and hook
+import { FirebaseContext } from './FirebaseContext';
 
-// Define the context with a default value
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
@@ -16,27 +14,28 @@ export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
 });
 
-// Create the provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext); // USE THE CONTEXT
+  const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Define the login function
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Use modular API
-      const authResult = await auth!.signInWithEmailAndPassword(email, password);
+      if (!auth || !firestore) {
+        throw new Error("Firebase services not available during login.");
+      }
+      const authResult = await auth.signInWithEmailAndPassword(email, password);
       const firebaseUser = authResult.user;
 
       if (firebaseUser) {
-        const userDocRef = getFirestore(auth?.app).collection('users').doc(firebaseUser.uid);
+        // USE THE FIRESTORE INSTANCE FROM THE CONTEXT
+        const userDocRef = firestore.collection('users').doc(firebaseUser.uid);
         await userDocRef.update({ logintime: Date.now() });
-        const userData = await getUser(firestore!, firebaseUser.uid);
+        const userData = await getUser(firestore, firebaseUser.uid);
         if (userData) {
-            await AsyncStorage.setItem('user', JSON.stringify(userData));
-            setUser(userData);
+          await AsyncStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
         }
       }
     } catch (error) {
@@ -47,10 +46,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Define the logout function
   const logout = async () => {
     try {
-      await auth!.signOut();
+      if (!auth) {
+        throw new Error("Auth service not available during logout.");
+      }
+      await auth.signOut();
       await AsyncStorage.removeItem('user');
       setUser(null);
     } catch (error) {
@@ -58,7 +59,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Memoize the context value
   const value = useMemo(() => ({
     user,
     loading,
@@ -67,12 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoggedIn: !!user,
   }), [user, loading, login, logout]);
 
-  // Handle initial user loading (on app start)
   useEffect(() => {
     if (!firebaseIsReady || !auth || !firestore) {
-        return;
+      return;
     }
-    // Subscriber to handle authentication state changes
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
       if (firebaseUser) {
         const userData = await getUser(firestore, firebaseUser.uid);
@@ -88,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth, firebaseIsReady, firestore]);
 
   if (!firebaseIsReady) {
-      return null; // Wait for Firebase to be ready before rendering AuthProvider's children
+    return null;
   }
 
   return (
