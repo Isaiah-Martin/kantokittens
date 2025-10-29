@@ -5,7 +5,7 @@ A Curated Cat Lounge on the Upper East Side
 Warm cafe where Filipino-inspired drinks and small plates meet a serene cat lounge filled with adoptable rescue cats.
 Savor thoughtfully sourced flavors, discover artisanal merchandise, and leave with a deeper connection to community and animals.
 
-<img width="750" height="1334" alt="image" src="./assets/images/KantoKittensIOS17.png" />
+![Kanto Kittens](./assets/images/KantoKittensIOS17.png)
 
 ## Local Build Testing
 
