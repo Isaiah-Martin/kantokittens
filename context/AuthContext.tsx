@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -18,7 +18,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const isInitialLoadRef = useRef(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
@@ -61,7 +60,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth]);
 
-  // Memoize the context value
   const value = useMemo(() => ({
     user,
     loading,
@@ -72,28 +70,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle initial user loading (on app start)
   useEffect(() => {
-    if (!firebaseIsReady || !auth || !firestore) {
+    console.log("AuthProvider useEffect running. firebaseIsReady:", firebaseIsReady);
+
+    // Timeout for debugging, using a compatible type
+    let timeout: any = null;
+    if (!firebaseIsReady) {
+      timeout = setTimeout(() => {
+        console.error("AuthProvider initialization timed out. Something is wrong.");
+        setLoading(false);
+      }, 10000);
       return;
     }
 
-    if (isInitialLoadRef.current) {
-      isInitialLoadRef.current = false;
-      const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-        if (firebaseUser) {
+    if (!auth || !firestore) {
+      setLoading(false);
+      return;
+    }
+
+    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+      clearTimeout(timeout);
+      console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
+      if (firebaseUser) {
+        try {
           const userData = await getUser(firestore, firebaseUser.uid);
-          if (userData) {
-            setUser(userData);
-          }
-        } else {
+          setUser(userData);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
           setUser(null);
         }
-        setLoading(false);
-      });
-      return () => subscriber();
-    }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      clearTimeout(timeout);
+      subscriber();
+    };
   }, [auth, firebaseIsReady, firestore]);
 
-  // Wait for the initial loading check to complete
+  // Wait for the initial authentication check to complete
   if (loading) {
     return null;
   }
