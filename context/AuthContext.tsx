@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -18,7 +18,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const isInitialLoadRef = useRef(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
@@ -75,9 +74,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (isInitialLoadRef.current) {
-      isInitialLoadRef.current = false;
-      const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+    // Use a variable to track if the initial check has been performed
+    let isInitialCheckPerformed = false;
+
+    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+      // Only run the initialization logic on the first call
+      if (!isInitialCheckPerformed) {
         if (firebaseUser) {
           const userData = await getUser(firestore, firebaseUser.uid);
           if (userData) {
@@ -87,12 +89,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
         }
         setLoading(false);
-      });
-      return () => subscriber();
-    }
+        isInitialCheckPerformed = true;
+      }
+    });
+
+    return () => subscriber();
   }, [auth, firebaseIsReady, firestore]);
 
-  // Wait for the initial loading check to complete
   if (loading) {
     return null;
   }
