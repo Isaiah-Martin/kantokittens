@@ -1,12 +1,12 @@
-// context/AuthProvider.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
-import { getUser } from '../lib/firestore'; // Assuming secureLogin is passed correctly
+import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
-import { useFirebase } from './FirebaseContext';
+import { FirebaseContext } from './FirebaseContext';
 
+// Create the context with a default value
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
@@ -15,20 +15,19 @@ export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
 });
 
+// Create the provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { auth, firestore, isReady: firebaseIsReady } = useFirebase();
+  const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const login = async (email: string, password: string) => {
+  // Memoize the login function
+  const login = useMemo(() => async (email: string, password: string) => {
     setLoading(true);
     try {
       if (!auth || !firestore) {
         throw new Error("Firebase services not available during login.");
       }
-      // Assuming secureLogin is a function that performs the login and returns the user
-      // secureLogin was removed from your imports, so you must pass it to AuthProvider if it's used elsewhere
-      // This example uses the modular auth service directly
       const authResult = await auth.signInWithEmailAndPassword(email, password);
       const firebaseUser = authResult.user;
 
@@ -47,9 +46,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [auth, firestore]);
 
-  const logout = async () => {
+  // Memoize the logout function
+  const logout = useMemo(() => async () => {
     try {
       if (!auth) {
         throw new Error("Auth service not available during logout.");
@@ -60,8 +60,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
-  };
+  }, [auth]);
 
+  // Memoize the context value
   const value = useMemo(() => ({
     user,
     loading,
@@ -70,14 +71,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoggedIn: !!user,
   }), [user, loading, login, logout]);
 
+  // Handle initial user loading (on app start)
   useEffect(() => {
     if (!firebaseIsReady || !auth || !firestore) {
       return;
     }
-
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
       if (firebaseUser) {
-        // Fetch user data from Firestore for logged-in user
         const userData = await getUser(firestore, firebaseUser.uid);
         if (userData) {
           setUser(userData);
@@ -85,15 +85,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
       }
-      setLoading(false); // SET LOADING FALSE *AFTER* THE ASYNC CHECK IS COMPLETE
+      setLoading(false);
     });
-
-    return () => subscriber(); // Return the unsubscriber function
+    return () => subscriber();
   }, [auth, firebaseIsReady, firestore]);
 
-  // Handle the initial loading state correctly
+  // Wait for the initial loading check to complete
   if (loading) {
-    return null; // Return null to prevent rendering until auth state is confirmed
+    return null;
   }
 
   return (
@@ -102,3 +101,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+// Create a hook to use the authentication context
+export const useAuth = () => useContext(AuthContext);
