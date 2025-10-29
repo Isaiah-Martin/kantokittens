@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
@@ -16,7 +15,6 @@ function AppAuthRedirect() {
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [isAppReady, setIsAppReady] = useState(false);
 
-  // Wait for both Firebase and Auth providers to be ready
   useEffect(() => {
     if (firebaseIsReady && !loading) {
       setIsAppReady(true);
@@ -33,7 +31,6 @@ function AppAuthRedirect() {
     return <LoadingScreen />;
   }
 
-  // Redirect if not authenticated
   if (!isLoggedIn) {
     return <Redirect href="/(auth)/login" />;
   }
@@ -48,6 +45,7 @@ export default function RootLayout() {
   return (
     <FirebaseProvider>
       <AuthProvider>
+        {/* Pass your actual app content to the redirection component */}
         <AppAuthRedirect />
       </AuthProvider>
     </FirebaseProvider>
