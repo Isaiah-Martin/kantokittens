@@ -17,11 +17,11 @@ export const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
-    setLoading(true);
+    setAuthLoading(true);
     try {
       if (!auth || !firestore) {
         throw new Error("Firebase services not available during login.");
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Login failed:', error);
       throw error;
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   }, [auth, firestore]);
 
@@ -60,43 +60,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth]);
 
-  const value = useMemo(() => ({
-    user,
-    loading,
-    login,
-    logout,
-    isLoggedIn: !!user,
-  }), [user, loading, login, logout]);
-
   // Handle initial user loading (on app start)
   useEffect(() => {
     if (!firebaseIsReady || !auth || !firestore) {
       return;
     }
 
-    // Use a variable to track if the initial check has been performed
-    let isInitialCheckPerformed = false;
-
     const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      // Only run the initialization logic on the first call
-      if (!isInitialCheckPerformed) {
-        if (firebaseUser) {
-          const userData = await getUser(firestore, firebaseUser.uid);
-          if (userData) {
-            setUser(userData);
-          }
-        } else {
-          setUser(null);
+      if (firebaseUser) {
+        const userData = await getUser(firestore, firebaseUser.uid);
+        if (userData) {
+          setUser(userData);
         }
-        setLoading(false);
-        isInitialCheckPerformed = true;
+      } else {
+        setUser(null);
       }
+      setAuthLoading(false);
     });
 
     return () => subscriber();
   }, [auth, firebaseIsReady, firestore]);
 
-  if (loading) {
+  const isLoggedIn = !!user;
+
+  const value = useMemo(() => ({
+    user,
+    loading: authLoading,
+    login,
+    logout,
+    isLoggedIn,
+  }), [user, authLoading, login, logout, isLoggedIn]);
+
+  if (authLoading) {
     return null;
   }
 
