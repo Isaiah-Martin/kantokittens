@@ -76,7 +76,7 @@ export default function Login() {
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#e7c8f7', dark: '#1D3D47' }}
-      headerImage={<Image source={require('@/assets/images/KantoKittens.png')} style={styles.reactLogo} />}>
+      headerImage={<Image source={require('@/assets/images/KantoKittensCover.png')} style={styles.reactLogo} />}>
       <SafeAreaView style={styles2.container}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

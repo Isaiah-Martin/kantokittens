@@ -10,7 +10,7 @@ export default function LoadingScreen() {
   return (
     <ThemedView style={[styles2.container, styles.loadingContainer]}>
       <Image
-        source={require('./assets/images/KantoKittens.png')} // Corrected relative path
+        source={require('./assets/images/KantoKittensCover.png')} // Corrected relative path
         style={styles.logo}
         contentFit="contain"
       />

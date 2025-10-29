@@ -1,14 +1,14 @@
-// app/_layout.tsx
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect, useState } from 'react'; // Import useState
-import { LogBox } from 'react-native'; // Import LogBox for debugging
+import { useContext, useEffect, useState } from 'react';
+import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
 import LoadingScreen from '../loading';
 
-// Prevent the splash screen from auto-hiding
+// Prevent the splash screen from auto-hiding immediately.
+// This should be called in the global scope, outside of any components.
 SplashScreen.preventAutoHideAsync();
 
 // Silence unnecessary logs in development
@@ -23,29 +23,26 @@ function AppAuthRedirect() {
   const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    console.log('AppAuthRedirect useEffect triggered.');
+    // Only proceed once both Firebase and Auth contexts are ready
     if (firebaseIsReady && !loading && !isAppReady) {
-      console.log('Firebase and Auth ready. Hiding splash screen...');
-      // Use a timeout to ensure the UI is ready before hiding the splash screen
-      setTimeout(() => {
-        setIsAppReady(true);
-        SplashScreen.hideAsync();
-      }, 500);
+      // Set the app as ready and hide the splash screen
+      setIsAppReady(true);
+      SplashScreen.hideAsync();
     }
-  }, [firebaseIsReady, loading, isAppReady]);
+  }, [firebaseIsReady, loading, isAppReady]); // isAppReady is a crucial dependency here
 
-  console.log(`AppAuthRedirect state - firebaseIsReady: ${firebaseIsReady}, loading: ${loading}, isAppReady: ${isAppReady}`);
-
+  // If the app is not ready, return a loading indicator
+  // This prevents rendering content prematurely, which can cause flicker.
   if (!isAppReady) {
     return <LoadingScreen />;
   }
 
+  // Once ready, check authentication and redirect
   if (!isLoggedIn) {
-    console.log('Not logged in. Redirecting to login page.');
     return <Redirect href="/(auth)/login" />;
   }
-  
-  console.log('Logged in. Continuing to main app content.');
+
+  // If authenticated, show the main application content
   return <Slot />;
 }
 
@@ -56,6 +53,7 @@ export default function RootLayout() {
   return (
     <FirebaseProvider>
       <AuthProvider>
+        {/* Render the authentication-checking component within the providers */}
         <AppAuthRedirect />
       </AuthProvider>
     </FirebaseProvider>
