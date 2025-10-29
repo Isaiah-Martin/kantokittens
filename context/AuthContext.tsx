@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
@@ -18,7 +18,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitialCheckRef = useRef(true);
 
+  // Memoize the login function
   const login = useMemo(() => async (email: string, password: string) => {
     setLoading(true);
     try {
@@ -45,6 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [auth, firestore]);
 
+  // Memoize the logout function
   const logout = useMemo(() => async () => {
     try {
       if (!auth) {
@@ -66,26 +69,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoggedIn: !!user,
   }), [user, loading, login, logout]);
 
+  // Handle initial user loading (on app start)
   useEffect(() => {
-    if (!firebaseIsReady || !auth || !firestore) {
+    // Only proceed if Firebase is ready.
+    if (!firebaseIsReady) {
       return;
     }
-    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
-      console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
-      if (firebaseUser) {
-        const userData = await getUser(firestore, firebaseUser.uid);
-        if (userData) {
-          setUser(userData);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
 
-    return () => subscriber();
+    if (!auth || !firestore) {
+      setLoading(false);
+      console.error("Firebase services not available after being marked ready.");
+      return;
+    }
+
+    // Use a ref to ensure the initialization logic runs only once
+    if (isInitialCheckRef.current) {
+      isInitialCheckRef.current = false;
+
+      const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+        console.log("onAuthStateChanged triggered. User:", firebaseUser ? "exists" : "null");
+        if (firebaseUser) {
+          const userData = await getUser(firestore, firebaseUser.uid);
+          if (userData) {
+            setUser(userData);
+          }
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      });
+      return () => subscriber();
+    }
   }, [auth, firebaseIsReady, firestore]);
 
+  // Wait for the initial loading check to complete
   if (loading) {
     return null;
   }
