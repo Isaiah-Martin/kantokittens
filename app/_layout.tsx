@@ -7,8 +7,10 @@ import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
 import LoadingScreen from '../loading';
 
+// Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+// Component that checks authentication and redirects
 function AppAuthRedirect() {
   const { isLoggedIn, loading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
@@ -21,6 +23,7 @@ function AppAuthRedirect() {
   }, [firebaseIsReady, loading]);
 
   if (!firebaseIsReady || loading) {
+    // RETURN THE LOADING SCREEN HERE
     return <LoadingScreen />;
   }
 
@@ -31,6 +34,7 @@ function AppAuthRedirect() {
   return <Slot />;
 }
 
+// The root component that sets up all the context providers
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
