@@ -20,16 +20,20 @@ if (__DEV__) {
 function AppAuthRedirect() {
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    if (!isLoading) {
+    // Hide the native splash screen only when all loading is truly complete
+    if (!isLoading && !isDataLoaded) {
+      setIsDataLoaded(true);
       SplashScreen.hideAsync();
     }
-  }, [isLoading]);
+  }, [isLoading, isDataLoaded]);
 
-  if (isLoading) {
+  if (!isDataLoaded) {
+    // Show the custom loading screen while contexts load
     return <LoadingScreen />;
   }
 
