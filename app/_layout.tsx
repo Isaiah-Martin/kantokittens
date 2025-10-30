@@ -3,6 +3,7 @@ import { Redirect, Slot, SplashScreen } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
 import { useContext, useEffect, useState } from 'react';
 import { LogBox } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
@@ -16,32 +17,6 @@ if (__DEV__) {
   LogBox.ignoreAllLogs();
 }
 
-// Component that checks authentication and redirects
-function AppAuthRedirect() {
-  const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
-  const { isReady: firebaseIsReady } = useContext(FirebaseContext);
-
-  const isLoading = authLoading || !firebaseIsReady;
-
-  useEffect(() => {
-    if (!isLoading) {
-      SplashScreen.hideAsync();
-    }
-  }, [isLoading]);
-
-  if (isLoading) {
-    // This part is never reached if RootLayout handles the loading screen
-    return <LoadingScreen />;
-  }
-
-  if (!isLoggedIn) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  return <Slot />;
-}
-
-// The root component that sets up all the context providers
 export default function RootLayout() {
   const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
@@ -85,10 +60,12 @@ export default function RootLayout() {
   }
 
   return (
-    <FirebaseProvider>
-      <AuthProvider>
-        <Slot />
-      </AuthProvider>
-    </FirebaseProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <FirebaseProvider>
+        <AuthProvider>
+          <Slot />
+        </AuthProvider>
+      </FirebaseProvider>
+    </GestureHandlerRootView>
   );
 }

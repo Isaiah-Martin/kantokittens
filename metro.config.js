@@ -1,7 +1,7 @@
-const { getDefaultConfig } = require('@expo/metro-config');
-const defaultConfig = getDefaultConfig(__dirname);
+// metro.config.js
+const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 
-defaultConfig.resolver.sourceExts.push('cjs');
-defaultConfig.resolver.unstable_enablePackageExports = false;
+const config = getDefaultConfig(__dirname);
 
-module.exports = defaultConfig;
+module.exports = wrapWithReanimatedMetroConfig(config);
