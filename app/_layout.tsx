@@ -2,7 +2,7 @@ import { Asset } from 'expo-asset';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
 import { useContext, useEffect, useState } from 'react';
-import { LogBox } from 'react-native';
+import { LogBox, View } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
@@ -24,7 +24,7 @@ function AppAuthRedirect() {
   const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    // Hide the splash screen only when all loading is truly complete
+    // Hide the native splash screen only when loading is truly complete
     if (!isLoading) {
       SplashScreen.hideAsync();
     }
@@ -51,6 +51,7 @@ export default function RootLayout() {
   useEffect(() => {
     async function loadAssets() {
       try {
+        // Ensure consistent background color on all platforms
         await SystemUI.setBackgroundColorAsync("#ffffff");
         const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
         await imageAsset.downloadAsync();
@@ -64,14 +65,21 @@ export default function RootLayout() {
   }, []);
 
   if (!assetsAreLoaded) {
-    // Keep the native splash screen visible while assets are loading
+    // Return null while assets are loading, keeping the native splash screen visible
     return null;
   }
 
   return (
     <FirebaseProvider>
       <AuthProvider>
-        <AppAuthRedirect />
+        {/*
+          Use a View to ensure the background color is consistently applied
+          before the AppAuthRedirect component renders. This prevents
+          any flicker from the native view's background showing.
+        */}
+        <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+          <AppAuthRedirect />
+        </View>
       </AuthProvider>
     </FirebaseProvider>
   );
