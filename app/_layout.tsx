@@ -2,7 +2,7 @@ import { Asset } from 'expo-asset';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
 import { useContext, useEffect, useState } from 'react';
-import { LogBox, View } from 'react-native';
+import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
@@ -20,20 +20,17 @@ if (__DEV__) {
 function AppAuthRedirect() {
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    // Hide the native splash screen only when all loading is truly complete
-    if (!isLoading && !isDataLoaded) {
-      setIsDataLoaded(true);
+    if (!isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [isLoading, isDataLoaded]);
+  }, [isLoading]);
 
-  if (!isDataLoaded) {
-    // Show the custom loading screen while contexts load
+  if (isLoading) {
+    // This part is never reached if RootLayout handles the loading screen
     return <LoadingScreen />;
   }
 
@@ -46,11 +43,14 @@ function AppAuthRedirect() {
 
 // The root component that sets up all the context providers
 export default function RootLayout() {
-  const [initialAssetsLoaded, setInitialAssetsLoaded] = useState(false);
+  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
+  const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
+  const { isReady: firebaseIsReady } = useContext(FirebaseContext);
+
+  const isLoading = authLoading || !firebaseIsReady || !initialLoadingComplete;
 
   useEffect(() => {
     let isMounted = true;
-
     async function loadResourcesAndDataAsync() {
       try {
         await SystemUI.setBackgroundColorAsync("#ffffff");
@@ -60,26 +60,34 @@ export default function RootLayout() {
         console.warn('Failed to load assets:', e);
       } finally {
         if (isMounted) {
-          setInitialAssetsLoaded(true);
+          setInitialLoadingComplete(true);
         }
       }
     }
-
     loadResourcesAndDataAsync();
-
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (!initialAssetsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#ffffff' }} />;
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!isLoggedIn) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   return (
     <FirebaseProvider>
       <AuthProvider>
-        <AppAuthRedirect />
+        <Slot />
       </AuthProvider>
     </FirebaseProvider>
   );
