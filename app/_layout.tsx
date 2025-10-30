@@ -1,6 +1,7 @@
+import { Asset } from 'expo-asset';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
-import { useContext, useEffect, useState } from 'react'; // Import useState
+import { useContext, useEffect, useState } from 'react';
 import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
@@ -45,25 +46,25 @@ function AppAuthRedirect() {
 
 // The root component that sets up all the context providers
 export default function RootLayout() {
-  const [appIsReady, setAppIsReady] = useState(false);
+  const [assetsAreLoaded, setAssetsAreLoaded] = useState(false);
 
   useEffect(() => {
-    async function prepare() {
+    async function loadAssets() {
       try {
-        // Use expo-system-ui to ensure a consistent background color immediately
-        await SystemUI.setBackgroundColorAsync("#ffffff"); // Match your native splash background
-        // You would load any custom fonts or other assets here
+        await SystemUI.setBackgroundColorAsync("#ffffff");
+        const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
+        await imageAsset.downloadAsync();
       } catch (e) {
-        console.warn(e);
+        console.warn('Failed to load assets:', e);
       } finally {
-        setAppIsReady(true);
+        setAssetsAreLoaded(true);
       }
     }
-    prepare();
+    loadAssets();
   }, []);
 
-  if (!appIsReady) {
-    // Return null while assets are loading, keeping the native splash screen visible
+  if (!assetsAreLoaded) {
+    // Keep the native splash screen visible while assets are loading
     return null;
   }
 
