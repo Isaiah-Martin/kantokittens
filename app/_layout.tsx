@@ -42,7 +42,7 @@ function AppAuthRedirect() {
 
 // The root component that sets up all the context providers
 export default function RootLayout() {
-  const [isReady, setIsReady] = useState(false);
+  const [initialAssetsLoaded, setInitialAssetsLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,7 +56,7 @@ export default function RootLayout() {
         console.warn('Failed to load assets:', e);
       } finally {
         if (isMounted) {
-          setIsReady(true);
+          setInitialAssetsLoaded(true);
         }
       }
     }
@@ -68,17 +68,14 @@ export default function RootLayout() {
     };
   }, []);
 
-  if (!isReady) {
-    // Show a blank, fully styled view while assets load to prevent flicker
+  if (!initialAssetsLoaded) {
     return <View style={{ flex: 1, backgroundColor: '#ffffff' }} />;
   }
 
   return (
     <FirebaseProvider>
       <AuthProvider>
-        <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-          <AppAuthRedirect />
-        </View>
+        <AppAuthRedirect />
       </AuthProvider>
     </FirebaseProvider>
   );
