@@ -42,7 +42,7 @@ export default function LoadingScreen() {
         Using AnimatedExpoImage, which combines reanimated and expo-image.
       */}
       <AnimatedExpoImage
-        source={require('../assets/images/KantoKittensCover.png')}
+        source={require('./assets/images/KantoKittensCover.png')}
         style={[styles.logo, animatedStyle]}
         contentFit="contain"
       />
