@@ -24,59 +24,58 @@ function AppAuthRedirect() {
   const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    // Hide the native splash screen only when loading is truly complete
     if (!isLoading) {
       SplashScreen.hideAsync();
     }
   }, [isLoading]);
 
-  // While loading, show the custom loading screen
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // Once loading is complete, handle authentication and redirect
   if (!isLoggedIn) {
     return <Redirect href="/(auth)/login" />;
   }
 
-  // If logged in, show the main app content
   return <Slot />;
 }
 
 // The root component that sets up all the context providers
 export default function RootLayout() {
-  const [assetsAreLoaded, setAssetsAreLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    async function loadAssets() {
+    let isMounted = true;
+
+    async function loadResourcesAndDataAsync() {
       try {
-        // Ensure consistent background color on all platforms
         await SystemUI.setBackgroundColorAsync("#ffffff");
         const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
         await imageAsset.downloadAsync();
       } catch (e) {
         console.warn('Failed to load assets:', e);
       } finally {
-        setAssetsAreLoaded(true);
+        if (isMounted) {
+          setIsReady(true);
+        }
       }
     }
-    loadAssets();
+
+    loadResourcesAndDataAsync();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  if (!assetsAreLoaded) {
-    // Return null while assets are loading, keeping the native splash screen visible
-    return null;
+  if (!isReady) {
+    // Show a blank, fully styled view while assets load to prevent flicker
+    return <View style={{ flex: 1, backgroundColor: '#ffffff' }} />;
   }
 
   return (
     <FirebaseProvider>
       <AuthProvider>
-        {/*
-          Use a View to ensure the background color is consistently applied
-          before the AppAuthRedirect component renders. This prevents
-          any flicker from the native view's background showing.
-        */}
         <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
           <AppAuthRedirect />
         </View>
