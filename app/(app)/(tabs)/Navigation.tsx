@@ -3,8 +3,8 @@ import { useContext } from 'react';
 import { AuthContext } from '../../../context/AuthContext';
 import LoadingScreen from '../../../loading';
 
-
-export const AppNavigator = () => {
+// Change the named export to a default export
+const AppNavigator = () => {
   const { isLoggedIn, loading } = useContext(AuthContext);
 
   if (loading) {
@@ -19,3 +19,5 @@ export const AppNavigator = () => {
     return <Redirect href="/(auth)/login" />;
   }
 };
+
+export default AppNavigator; // Export it as default
