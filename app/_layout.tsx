@@ -17,35 +17,15 @@ if (__DEV__) {
   LogBox.ignoreAllLogs();
 }
 
-export default function RootLayout() {
-  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
+// Component to handle authentication checks and final redirects
+function AppAuthRedirect() {
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
 
-  const isLoading = authLoading || !firebaseIsReady || !initialLoadingComplete;
+  const isLoading = authLoading || !firebaseIsReady;
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadResourcesAndDataAsync() {
-      try {
-        await SystemUI.setBackgroundColorAsync("#ffffff");
-        const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
-        await imageAsset.downloadAsync();
-      } catch (e) {
-        console.warn('Failed to load assets:', e);
-      } finally {
-        if (isMounted) {
-          setInitialLoadingComplete(true);
-        }
-      }
-    }
-    loadResourcesAndDataAsync();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
+    // This effect runs only after the AuthProvider and FirebaseProvider are mounted and their states are updated
     if (!isLoading) {
       SplashScreen.hideAsync();
     }
@@ -59,11 +39,44 @@ export default function RootLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  return <Slot />;
+}
+
+// The root component that sets up all the context providers and asset loading
+export default function RootLayout() {
+  const [initialAssetsLoaded, setInitialAssetsLoaded] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadResourcesAndDataAsync() {
+      try {
+        await SystemUI.setBackgroundColorAsync("#ffffff");
+        const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
+        await imageAsset.downloadAsync();
+      } catch (e) {
+        console.warn('Failed to load assets:', e);
+      } finally {
+        if (isMounted) {
+          setInitialAssetsLoaded(true);
+        }
+      }
+    }
+    loadResourcesAndDataAsync();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (!initialAssetsLoaded) {
+    return <LoadingScreen />;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FirebaseProvider>
         <AuthProvider>
-          <Slot />
+          {/* AppAuthRedirect can now safely consume context data */}
+          <AppAuthRedirect />
         </AuthProvider>
       </FirebaseProvider>
     </GestureHandlerRootView>
