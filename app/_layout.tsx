@@ -9,23 +9,40 @@ import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
 import LoadingScreen from '../loading';
 
-// Prevent the native splash screen from auto-hiding immediately.
 SplashScreen.preventAutoHideAsync();
-
-// Silence unnecessary logs in development
 if (__DEV__) {
   LogBox.ignoreAllLogs();
 }
 
-// Component to handle authentication checks and final redirects
-function AppAuthRedirect() {
+export default function RootLayout() {
+  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
 
-  const isLoading = authLoading || !firebaseIsReady;
+  const isLoading = authLoading || !firebaseIsReady || !initialLoadingComplete;
 
   useEffect(() => {
-    // This effect runs only after the AuthProvider and FirebaseProvider are mounted and their states are updated
+    let isMounted = true;
+    async function loadResourcesAndDataAsync() {
+      try {
+        await SystemUI.setBackgroundColorAsync("#ffffff");
+        const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
+        await imageAsset.downloadAsync();
+      } catch (e) {
+        console.warn('Failed to load assets:', e);
+      } finally {
+        if (isMounted) {
+          setInitialLoadingComplete(true);
+        }
+      }
+    }
+    loadResourcesAndDataAsync();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isLoading) {
       SplashScreen.hideAsync();
     }
@@ -39,44 +56,11 @@ function AppAuthRedirect() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return <Slot />;
-}
-
-// The root component that sets up all the context providers and asset loading
-export default function RootLayout() {
-  const [initialAssetsLoaded, setInitialAssetsLoaded] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadResourcesAndDataAsync() {
-      try {
-        await SystemUI.setBackgroundColorAsync("#ffffff");
-        const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
-        await imageAsset.downloadAsync();
-      } catch (e) {
-        console.warn('Failed to load assets:', e);
-      } finally {
-        if (isMounted) {
-          setInitialAssetsLoaded(true);
-        }
-      }
-    }
-    loadResourcesAndDataAsync();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  if (!initialAssetsLoaded) {
-    return <LoadingScreen />;
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FirebaseProvider>
         <AuthProvider>
-          {/* AppAuthRedirect can now safely consume context data */}
-          <AppAuthRedirect />
+          <Slot />
         </AuthProvider>
       </FirebaseProvider>
     </GestureHandlerRootView>
