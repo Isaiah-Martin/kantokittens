@@ -14,8 +14,11 @@ if (__DEV__) {
   LogBox.ignoreAllLogs();
 }
 
-export default function RootLayout() {
+// Rename the original function to something internal
+function RootLayoutContent() {
   const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
+  
+  // These contexts are now safely consumed because RootLayoutWrapper provides them
   const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
   const { isReady: firebaseIsReady } = useContext(FirebaseContext);
 
@@ -56,11 +59,18 @@ export default function RootLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  // The Slot renders your app's screens using the provided contexts
+  return <Slot />;
+}
+
+// Create a new default export that wraps the content in all required Providers
+export default function RootLayoutWrapper() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FirebaseProvider>
         <AuthProvider>
-          <Slot />
+          {/* RootLayoutContent can now access AuthContext and FirebaseContext */}
+          <RootLayoutContent /> 
         </AuthProvider>
       </FirebaseProvider>
     </GestureHandlerRootView>
