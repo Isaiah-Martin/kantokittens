@@ -1,15 +1,24 @@
 // app.config.js
-module.exports = ({ config }) => {
-  const newConfig = { ...config };
-  newConfig.ios = {
-    ...newConfig.ios,
-    // Use the EAS secret in builds, local file for prebuild
-    googleServicesFile: process.env.GOOGLE_SERVICES_PLIST || './GoogleService-Info.plist',
+// This line loads variables from your .env file into process.env
+import 'dotenv/config';
+
+export default ({ config }) => {
+  return {
+    ...config,
+    // Add the 'extra' field to store your public environment variables
+    extra: {
+      ...config.extra, // Keep any existing extra variables
+      EXPO_PUBLIC_FIREBASE_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      EXPO_PUBLIC_FIREBASE_DATABASE_URL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
+      // You can add other configuration items here if needed
+      eas: {
+        projectId: "YOUR_EAS_PROJECT_ID" // Replace with your Expo Application Services Project ID
+      }
+    },
   };
-  newConfig.android = {
-    ...newConfig.android,
-    // Use the EAS secret in builds, local file for prebuild
-    googleServicesFile: process.env.GOOGLE_SERVICES_JSON || './google-services.json',
-  };
-  return newConfig;
 };
