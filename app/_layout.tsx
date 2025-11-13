@@ -1,3 +1,5 @@
+// app/_layout.tsx
+
 import { Asset } from 'expo-asset';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
@@ -7,14 +9,17 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
-import LoadingScreen from '../loading';
+// Removed explicit import of LoadingScreen as we use null during loading
+// import LoadingScreen from '../loading'; 
 
+// Prevent the splash screen from hiding automatically at app start
 SplashScreen.preventAutoHideAsync();
+
+// Suppress all logs during development if preferred
 if (__DEV__) {
   LogBox.ignoreAllLogs();
 }
 
-// Rename the original function to something internal
 function RootLayoutContent() {
   const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
   
@@ -28,7 +33,9 @@ function RootLayoutContent() {
     let isMounted = true;
     async function loadResourcesAndDataAsync() {
       try {
-        await SystemUI.setBackgroundColorAsync("#ffffff");
+        // Use an actual color value or variable if available
+        await SystemUI.setBackgroundColorAsync("#ffffff"); 
+        // Pre-download your cover image asset
         const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
         await imageAsset.downloadAsync();
       } catch (e) {
@@ -47,19 +54,25 @@ function RootLayoutContent() {
 
   useEffect(() => {
     if (!isLoading) {
+      // Hide the native splash screen only once everything is ready
       SplashScreen.hideAsync();
     }
   }, [isLoading]);
 
   if (isLoading) {
-    return <LoadingScreen />;
+    // Return null to keep the native splash screen visible while loading
+    return null; 
+    // If you prefer your custom JS LoadingScreen immediately visible instead:
+    // return <LoadingScreen />; 
   }
 
+  // Use Redirect to navigate based on auth status
   if (!isLoggedIn) {
+    // Redirects to the login route within the (auth) group
     return <Redirect href="/(auth)/login" />;
   }
 
-  // The Slot renders your app's screens using the provided contexts
+  // The user is logged in. Use Slot to render the rest of the app's (app) routes.
   return <Slot />;
 }
 
