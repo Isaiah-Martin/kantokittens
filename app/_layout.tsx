@@ -1,89 +1,59 @@
 // app/_layout.tsx
 
-import { Asset } from 'expo-asset';
 import { Redirect, Slot, SplashScreen } from 'expo-router';
-import * as SystemUI from 'expo-system-ui';
 import { useContext, useEffect, useState } from 'react';
 import { LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { AuthContext, AuthProvider } from '../context/AuthContext';
-import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext';
-// Removed explicit import of LoadingScreen as we use null during loading
-// import LoadingScreen from '../loading'; 
+import { FirebaseProvider } from '../context/FirebaseContext';
+// Assuming you have the context files in these paths
 
-// Prevent the splash screen from hiding automatically at app start
+// Prevent the native splash screen from disappearing automatically
 SplashScreen.preventAutoHideAsync();
 
-// Suppress all logs during development if preferred
 if (__DEV__) {
+  // Optional: Ignore all development warnings
   LogBox.ignoreAllLogs();
 }
 
-function RootLayoutContent() {
-  const [initialLoadingComplete, setInitialLoadingComplete] = useState(false);
+function AuthContentHandler() {
+  // Safely consume context within the wrapper
+  const { isLoggedIn, loading } = useContext(AuthContext);
   
-  // These contexts are now safely consumed because RootLayoutWrapper provides them
-  const { isLoggedIn, loading: authLoading } = useContext(AuthContext);
-  const { isReady: firebaseIsReady } = useContext(FirebaseContext);
-
-  const isLoading = authLoading || !firebaseIsReady || !initialLoadingComplete;
+  // Example state for pre-loading assets, if needed (can be simplified)
+  const [assetsLoaded, setAssetsLoaded] = useState(true); 
+  const isLoading = loading || !assetsLoaded;
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadResourcesAndDataAsync() {
-      try {
-        // Use an actual color value or variable if available
-        await SystemUI.setBackgroundColorAsync("#ffffff"); 
-        // Pre-download your cover image asset
-        const imageAsset = Asset.fromModule(require('../assets/images/KantoKittensCover.png'));
-        await imageAsset.downloadAsync();
-      } catch (e) {
-        console.warn('Failed to load assets:', e);
-      } finally {
-        if (isMounted) {
-          setInitialLoadingComplete(true);
-        }
-      }
-    }
-    loadResourcesAndDataAsync();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
+    // Hide the native splash screen when all application logic is ready
     if (!isLoading) {
-      // Hide the native splash screen only once everything is ready
       SplashScreen.hideAsync();
     }
   }, [isLoading]);
 
   if (isLoading) {
-    // Return null to keep the native splash screen visible while loading
-    return null; 
-    // If you prefer your custom JS LoadingScreen immediately visible instead:
-    // return <LoadingScreen />; 
+    // Keep the native splash screen visible while loading data/assets
+    return null;
   }
 
-  // Use Redirect to navigate based on auth status
   if (!isLoggedIn) {
-    // Redirects to the login route within the (auth) group
-    return <Redirect href="/(auth)/login" />;
+    // User is not logged in: Redirect to the (auth) group
+    return <Redirect href="/(auth)/login" />; 
   }
 
-  // The user is logged in. Use Slot to render the rest of the app's (app) routes.
+  // User is logged in: Render the rest of the application (e.g., (app) group)
   return <Slot />;
 }
 
-// Create a new default export that wraps the content in all required Providers
+// The default export wraps the logic in providers
 export default function RootLayoutWrapper() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FirebaseProvider>
         <AuthProvider>
-          {/* RootLayoutContent can now access AuthContext and FirebaseContext */}
-          <RootLayoutContent /> 
+          {/* AuthContentHandler manages the routing logic */}
+          <AuthContentHandler /> 
         </AuthProvider>
       </FirebaseProvider>
     </GestureHandlerRootView>
