@@ -1,4 +1,5 @@
 // context/FirebaseContext.tsx
+import Constants from 'expo-constants'; // Import Constants directly
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import LoadingScreen from '~/loading'; // Adjust path if needed
@@ -51,24 +52,19 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
         let firestore: Firestore;
 
         if (Platform.OS === 'web') {
-          // *** FIX FOR WEB PLATFORM IMPORTS ***
-
-          // Import the core app functions
+          // *** WEB PLATFORM IMPORTS ***
           const { initializeApp, getApps, getApp } = await import('firebase/app');
-          // Import the specific service functions
           const { getAuth } = await import('firebase/auth');
           const { getFirestore } = await import('firebase/firestore');
           
-          const Constants = await import('expo-constants');
-          
           const firebaseConfig = {
-            apiKey: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY,
-            authDomain: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-            projectId: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-            storageBucket: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-            messagingSenderId: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-            appId: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_APP_ID,
-            databaseURL: Constants.default.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
+            apiKey: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY,
+            authDomain: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+            projectId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+            storageBucket: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+            appId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_APP_ID,
+            databaseURL: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
           };
 
           let appInstance;
@@ -78,21 +74,20 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
             appInstance = getApp();
           }
 
-          // Assign the specific services from their proper function calls
           app = appInstance;
           auth = getAuth(appInstance);
           firestore = getFirestore(appInstance);
           
         } else {
           // *** NATIVE (iOS/Android) PLATFORM ***
-          // Use @react-native-firebase packages (which read native config files)
           const nativeFirebase = await import('@react-native-firebase/app');
           const nativeAuth = await import('@react-native-firebase/auth');
           const nativeFirestore = await import('@react-native-firebase/firestore');
 
           app = nativeFirebase.getApp();
-          auth = nativeAuth.getAuth(app);
-          firestore = nativeFirestore.getFirestore(app);
+          // FIX: Use the function calls '()' to get the instances
+          auth = nativeAuth.auth(); 
+          firestore = nativeFirestore.firestore(); 
         }
 
         setFirebaseServices({ app, auth, firestore, error: null });
