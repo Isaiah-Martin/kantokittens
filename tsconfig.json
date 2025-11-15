@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "strict": true,
     "allowImportingTsExtensions": true,
+    "esModuleInterop": true, 
     "jsx": "react-native",
     "paths": {
       "@context/*": ["context/*"],
