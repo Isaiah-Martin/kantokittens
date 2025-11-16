@@ -1,3 +1,4 @@
+import ParallaxScrollView from '@/components/parallax-scroll-view';
 import validator from 'email-validator';
 import { Href, useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
@@ -9,24 +10,25 @@ import {
     StyleSheet,
     View,
 } from 'react-native';
-import { ActivityIndicator, Button, TextInput, Text, useTheme } from 'react-native-paper';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { ActivityIndicator, Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
 import { styles2 } from '../../styles/css'; // Assuming styles are exported
+// import { useFirebase } from '../../context/FirebaseContext'; // Removed this import; it's handled by AuthContext
 
 export default function Login() {
     const router = useRouter();
-    const { login, loading } = useContext(AuthContext); // Use useContext for login and loading
+    // Destructure login directly from AuthContext; it's guaranteed to be a function there
+    const { login, loading } = useContext(AuthContext); 
+    // const { auth } = useFirebase(); // No longer needed here
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    // Use a single state variable for overall login error messages
     const [errorMsg, setErrorMsg] = useState('');
 
     const theme = useTheme();
     const primaryColor = theme.colors.primary;
 
     const handleLogin = async () => {
-        setErrorMsg(''); // Clear previous errors
+        setErrorMsg(''); 
 
         if (!validator.validate(email)) {
             setErrorMsg('Please provide a valid email');
@@ -37,13 +39,15 @@ export default function Login() {
             setErrorMsg('Password cannot be empty');
             return;
         }
+        
+        // Removed the check for !auth and !login function, as we rely on AuthContext
+        // to provide a reliable 'login' function definition.
 
         try {
-            // Assuming the login function handles setting the global 'loading' state
+            // This calls the guaranteed functional 'login' function from AuthContext
             await login(email, password);
-            // If successful, AuthContext should handle navigation
         } catch (error: any) {
-            // This catch block is hit if the 'login' context function throws an error
+            // ... (rest of error handling is fine) ...
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email') {
                 setErrorMsg('Incorrect email or password.');
             } else if (error.message.includes('Network error')) {
@@ -60,7 +64,6 @@ export default function Login() {
         setErrorMsg('');
     }
 
-    // Use the global 'loading' state to disable buttons and show activity indicator
     const isUIDisabled = loading;
 
     return (
@@ -99,7 +102,6 @@ export default function Login() {
                             style={{marginTop: 10}}
                         />
 
-                        {/* Display the centralized error message */}
                         {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
                         
                         <View style={styles2.itemCenter}>
@@ -141,7 +143,6 @@ export default function Login() {
                         </View>
                     </View>
                 </KeyboardAvoidingView>
-                {/* Simplified Activity indicator display */}
                 {isUIDisabled && (
                   <View style={styles2.loading}>
                       <ActivityIndicator size="large" animating={true} color={primaryColor} />

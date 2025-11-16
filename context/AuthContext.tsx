@@ -44,26 +44,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Memoize login and logout with useCallback for stable function identities
   const login = useCallback(async (email: string, password: string) => {
-    // setLoading(true); // Handled by the useEffect hook that observes auth state
+    // *** CRITICAL CHECK IN PLACE ***
+    if (!auth || !firestore) {
+      // This error message is caught in login.tsx and displayed
+      throw new Error('Firebase services not available during login.');
+    }
     try {
-      if (!auth || !firestore) {
-        throw new Error('Firebase services not available during login.');
-      }
       const authResult = await auth.signInWithEmailAndPassword(email, password);
       // The onAuthStateChanged listener in useEffect will pick up the user change
       // and handle fetching userData and setting global state.
     } catch (error) {
       console.error('Login failed:', error);
-      // setLoading(false); // Handled by the useEffect hook that observes auth state
       throw error; // Re-throw so the Login screen can display specific errors
     }
   }, [auth, firestore]);
 
   const logout = useCallback(async () => {
-    try {
-      if (!auth) {
+    // *** CRITICAL CHECK IN PLACE ***
+    if (!auth) {
         throw new Error('Auth service not available during logout.');
-      }
+    }
+    try {
       await auth.signOut();
       await AsyncStorage.removeItem('user');
       // The onAuthStateChanged listener in useEffect will pick up the user change (null)

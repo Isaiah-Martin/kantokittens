@@ -1,14 +1,14 @@
+import validator from 'email-validator'; // Assuming you have an email validator
 import { Href, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Text as RNText,
   SafeAreaView,
   ScrollView,
   View,
 } from 'react-native';
-import { ActivityIndicator, Button, TextInput, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { addUser } from '~/lib/firestore';
 import { useFirebase } from '../../context/FirebaseContext';
 import { User } from '../../navigation/types'; // Import the User type
@@ -19,81 +19,80 @@ export default function SignUp() {
   const { auth, firestore } = useFirebase();
   const theme = useTheme();
   const primaryColor = theme.colors.primary;
-
-  const [user, setUser] = useState<Omit<User, 'uid' | 'email'> & { email: string, password: string }>({
+  const [user, setUser] = useState<Omit<User, 'uid'> & { password: string; name: string }>({
     name: '',
     email: '',
     password: '',
   });
   const [password2, setPassWd2] = useState('');
-  const [nameerr, setNameErr] = useState('');
-  const [emailerr, setEmailErr] = useState('');
-  const [passwderr, setPassWdErr] = useState('');
+  const [errorMsg, setErrorMsg] = useState(''); // Consolidated error message state
   const [inPost, setInPost] = useState(false);
 
-  function changeName(text: string) {
-    setUser((prevState) => ({ ...prevState, name: text }));
-  }
-
-  function changeEmail(text: string) {
-    setUser((prevState) => ({ ...prevState, email: text }));
-  }
-
-  function changePasswd(text: string) {
-    setUser((prevState) => ({ ...prevState, password: text }));
-  }
-
-  function changePasswd2(text: string) {
-    setPassWd2(text);
-  }
+  // Helper to update user state dynamically
+  const updateUser = (field: keyof typeof user, value: string) => {
+    setUser((prevState) => ({ ...prevState, [field]: value }));
+  };
 
   function resetErrMsg() {
-    setNameErr('');
-    setEmailErr('');
-    setPassWdErr('');
+    setErrorMsg('');
   }
 
-async function submitForm() {
+  async function submitForm() {
     resetErrMsg();
-    if (user.name != undefined && !user.name.trim()) {
-      setNameErr('Please type your name, this field is required!');
+
+    // 1. Validation Checks
+    if (!user.name.trim()) {
+      setErrorMsg('Please type your name, this field is required!');
       return;
     }
     if (!user.email) {
-      setEmailErr('Please type your email, this field is required!');
+      setErrorMsg('Please type your email, this field is required!');
+      return;
+    }
+    if (!validator.validate(user.email)) {
+        setErrorMsg('Please enter a valid email address.');
+        return;
+    }
+    if (!user.password || user.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
       return;
     }
     if (user.password !== password2) {
-      setPassWdErr('Passwords do not match!');
+      setErrorMsg('Passwords do not match!');
       return;
     }
     if (!auth || !firestore) {
-      // Handle case where Firebase is not yet initialized
+      setErrorMsg('Firebase services not available.');
       return;
     }
 
+    // 2. Proceed with Firebase Auth
     setInPost(true);
     try {
       const userCredential = await auth.createUserWithEmailAndPassword(user.email, user.password);
+      
       const newUser: User = {
         uid: userCredential.user.uid,
         name: user.name,
         email: user.email,
+        // Add other required fields from your User type here if needed
       };
+      
       await addUser(firestore, newUser);
 
-      setInPost(false);
-      // Cast the path string to Href to resolve the type error
-      router.replace('/(app)' as Href); 
+      // AuthContext listener in the layout will handle the navigation to /(app)
+      
     } catch (error: any) {
-      setInPost(false);
       if (error.code === 'auth/email-already-in-use') {
-        setEmailErr('That email address is already in use!');
+        setErrorMsg('That email address is already in use!');
       } else if (error.code === 'auth/invalid-email') {
-        setEmailErr('That email address is invalid!');
+        setErrorMsg('That email address is invalid!');
       } else {
-        setPassWdErr(error.message);
+        setErrorMsg(error.message || 'An error occurred during sign up.');
       }
+    } finally {
+      // Set inPost to false in finally block to ensure loading state finishes
+      setInPost(false); 
     }
   }
 
@@ -102,6 +101,9 @@ async function submitForm() {
     setPassWd2('');
     resetErrMsg();
   }
+  
+  // Use inPost state to disable fields while loading
+  const isUIDisabled = inPost;
 
   return (
     <SafeAreaView style={styles2.container}>
@@ -109,58 +111,70 @@ async function submitForm() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles2.container}>
         <ScrollView contentContainerStyle={styles2.container}>
-          <View style={styles2.loginMain}></View>
+          {/* Removed empty View style={styles2.loginMain} */}
           <View style={styles2.mainContainer}>
             <View style={styles2.itemCenter}>
-              <RNText style={styles2.titleText}>Join to Place Booking</RNText>
+              <Text style={styles2.titleText}>Join to Place Booking</Text>
             </View>
             <TextInput
               mode="outlined"
               label="Name"
               placeholder="Name*"
               value={user.name}
-              onChangeText={changeName}
+              onChangeText={(text) => updateUser('name', text)}
+              disabled={isUIDisabled}
             />
-            <RNText style={{ color: 'red' }}>{nameerr}</RNText>
+            
             <TextInput
               mode="outlined"
               label="Email"
               placeholder="Email*"
               value={user.email}
-              onChangeText={changeEmail}
+              onChangeText={(text) => updateUser('email', text)}
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
+              disabled={isUIDisabled}
+              style={{marginTop: 10}}
             />
-            <RNText style={{ color: 'red' }}>{emailerr}</RNText>
+            
             <TextInput
               mode="outlined"
               label="Password"
               placeholder="Password*"
               secureTextEntry={true}
               value={user.password}
-              onChangeText={changePasswd}
+              onChangeText={(text) => updateUser('password', text)}
+              disabled={isUIDisabled}
+              style={{marginTop: 10}}
             />
-            <RNText style={{ color: 'red' }}>{passwderr}</RNText>
+            
             <TextInput
               mode="outlined"
               label="Please type password again"
               placeholder="Please type password again*"
               secureTextEntry={true}
               value={password2}
-              onChangeText={changePasswd2}
+              onChangeText={setPassWd2}
+              disabled={isUIDisabled}
+              style={{marginTop: 10}}
             />
+
+            {/* Display combined error message */}
+            {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
+            
             <View style={[styles2.itemLeft, { marginTop: 20 }]}>
-              <Button mode="contained" style={{ marginRight: 20 }} onPress={submitForm}>
+              <Button mode="contained" style={{ marginRight: 20 }} onPress={submitForm} disabled={isUIDisabled} loading={isUIDisabled}>
                 Sign Up
               </Button>
-              <Button mode="contained" style={{ marginRight: 20 }} onPress={resetForm}>
+              <Button mode="contained" style={{ marginRight: 20 }} onPress={resetForm} disabled={isUIDisabled}>
                 Reset
               </Button>
               <Button
                 mode="outlined"
                 style={{ marginRight: 20 }}
                 onPress={() => router.replace('/(auth)/login' as Href)}
+                disabled={isUIDisabled}
               >
                 Log In
               </Button>
@@ -168,7 +182,7 @@ async function submitForm() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      {inPost && (
+      {isUIDisabled && (
         <View style={styles2.loading}>
           <ActivityIndicator size="large" animating={true} color={primaryColor} />
         </View>
