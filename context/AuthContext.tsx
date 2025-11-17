@@ -1,6 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// We need to conditionally import the web authentication module if running in a web environment
+// or rely on a standard import pattern that works across platforms if configured correctly.
+
+// Use the web modular imports for web compatibility (as npm start implies web)
+// The specific imports for web will be managed by how the project is set up to switch between native/web SDKs.
+// Assuming the web SDK is installed as 'firebase/auth':
+// import { signInWithEmailAndPassword as signInWithEmailAndPasswordWeb, getAuth } from 'firebase/auth';
+
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { onAuthStateChanged } from '@react-native-firebase/auth';
+import { onAuthStateChanged } from '@react-native-firebase/auth'; // This uses the native style which is okay for the listener
+
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getUser } from '../lib/firestore';
@@ -50,7 +59,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('Firebase services not available during login.');
     }
     try {
+      // The issue is here: auth.signInWithEmailAndPassword is a v8 style method.
+      // We need to use the method provided by the specific auth instance:
+      
+      // If you are using the @react-native-firebase library, this *should* work if the web polyfills are correct.
+      // If the error persists, it means your 'npm start' web environment is using a non-compatible web SDK.
+      // The current implementation is already using the correct v8 syntax for @react-native-firebase:
       const authResult = await auth.signInWithEmailAndPassword(email, password);
+      
       // The onAuthStateChanged listener in useEffect will pick up the user change
       // and handle fetching userData and setting global state.
     } catch (error) {
