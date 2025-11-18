@@ -52,10 +52,10 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
         let firestore: Firestore;
 
         if (Platform.OS === 'web') {
-          // *** WEB PLATFORM IMPORTS ***
+          // *** WEB PLATFORM IMPORTS & CONFIGURATION ***
           const { initializeApp, getApps, getApp } = await import('firebase/app');
           const { getAuth } = await import('firebase/auth');
-          const { getFirestore } = await import('firebase/firestore');
+          const { initializeFirestore } = await import('firebase/firestore');
           
           const firebaseConfig = {
             apiKey: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -76,18 +76,23 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
 
           app = appInstance;
           auth = getAuth(appInstance);
-          firestore = getFirestore(appInstance);
+          
+          // *** CRITICAL CHANGE FOR OFFLINE FIX (WEB ONLY) ***
+          // Use 'as any' to bypass the TypeScript error caused by mixed native/web types
+          firestore = initializeFirestore(appInstance, {
+            experimentalForceLongPolling: true, 
+            synchronizeTabs: true, 
+          } as any); // Cast options to 'any' for the web-specific properties
           
         } else {
-          // *** NATIVE (iOS/Android) PLATFORM ***
-          const nativeFirebase = await import('@react-native-firebase/app');
-          const nativeAuth = await import('@react-native-firebase/auth');
-          const nativeFirestore = await import('@react-native-firebase/firestore');
+          // *** NATIVE (iOS/Android) PLATFORM (Fixed initialization) ***
+          const authModule = await import('@react-native-firebase/auth');
+          const firestoreModule = await import('@react-native-firebase/firestore');
+          const appModule = await import('@react-native-firebase/app');
 
-          app = nativeFirebase.getApp();
-          // FIX: Use the function calls '()' to get the instances
-          auth = nativeAuth.auth(); 
-          firestore = nativeFirestore.firestore(); 
+          app = appModule.getApp();
+          auth = authModule.default(); 
+          firestore = firestoreModule.default(); 
         }
 
         setFirebaseServices({ app, auth, firestore, error: null });
