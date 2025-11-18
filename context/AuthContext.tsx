@@ -50,22 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('Firebase services not available during login.');
     }
     try {
-      // *** REVISED LOGIN LOGIC ***
-      // We check if the expected v8 method exists first (for native RN builds using @react-native-firebase).
-      if (typeof (auth as any).signInWithEmailAndPassword === 'function') {
-        const authResult = await (auth as any).signInWithEmailAndPassword(email, password);
-        // We cast 'auth as any' to bypass TypeScript errors about the method existing.
-      } 
-      // If the above fails, your web environment is likely using the v9 modular web SDK.
-      else {
-        // Dynamically import the v9 modular function (requires 'firebase' npm package to be installed)
-        const { signInWithEmailAndPassword } = await import('firebase/auth');
-        
-        // This line attempts to call the standalone function with the `auth` object it gets from the context:
-        const authResult = await signInWithEmailAndPassword(auth as any, email, password);
-      }
-      // *** END REVISED LOGIN LOGIC ***
-
+      // --- ORIGINAL V8 SYNTAX FOR NATIVE (@react-native-firebase) ---
+      const authResult = await auth.signInWithEmailAndPassword(email, password);
+      
       // The onAuthStateChanged listener in useEffect will pick up the user change
       // and handle fetching userData and setting global state.
     } catch (error) {

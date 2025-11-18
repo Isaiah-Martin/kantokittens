@@ -5,7 +5,7 @@ import { Platform, Text, View } from 'react-native';
 import LoadingScreen from '~/loading'; // Adjust path if needed
 
 // --- Type Definitions (Simplified for cross-platform compatibility) ---
-type FirebaseApp = any; // Use 'any' to handle type differences between web and native SDKs
+type FirebaseApp = any; 
 type Firestore = any;
 type Auth = any;
 
@@ -78,11 +78,10 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
           auth = getAuth(appInstance);
           
           // *** CRITICAL CHANGE FOR OFFLINE FIX (WEB ONLY) ***
-          // Use 'as any' to bypass the TypeScript error caused by mixed native/web types
           firestore = initializeFirestore(appInstance, {
             experimentalForceLongPolling: true, 
             synchronizeTabs: true, 
-          } as any); // Cast options to 'any' for the web-specific properties
+          } as any); 
           
         } else {
           // *** NATIVE (iOS/Android) PLATFORM (Fixed initialization) ***
@@ -91,6 +90,7 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
           const appModule = await import('@react-native-firebase/app');
 
           app = appModule.getApp();
+          // FIX: Access the default exported function for the instance
           auth = authModule.default(); 
           firestore = firestoreModule.default(); 
         }
@@ -111,7 +111,7 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
   if (!isReady) {
     return <LoadingScreen />;
   }
-
+  // ... (rest of the component is the same) ...
   if (firebaseServices.error) {
     return (
       <View style={{ padding: 20, backgroundColor: 'white' }}>
