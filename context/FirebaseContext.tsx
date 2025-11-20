@@ -46,6 +46,7 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
 
   useEffect(() => {
     const initialize = async () => {
+      console.log("Initialization started in FirebaseContext."); // Log 1
       try {
         let app: FirebaseApp;
         let auth: Auth;
@@ -53,6 +54,7 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
 
         if (Platform.OS === 'web') {
           // *** WEB PLATFORM IMPORTS & CONFIGURATION ***
+          console.log("Initializing for web platform."); // Log 2
           const { initializeApp, getApps, getApp } = await import('firebase/app');
           const { getAuth } = await import('firebase/auth');
           const { initializeFirestore } = await import('firebase/firestore');
@@ -85,23 +87,28 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
           
         } else {
           // *** NATIVE (iOS/Android) PLATFORM (Fixed initialization) ***
+          console.log("Initializing for native platform (iOS/Android)."); // Log 3
           const authModule = await import('@react-native-firebase/auth');
           const firestoreModule = await import('@react-native-firebase/firestore');
           const appModule = await import('@react-native-firebase/app');
+          console.log("Native modules imported."); // Log 4
 
           app = appModule.getApp();
-          // FIX: Access the default exported function for the instance
           auth = authModule.default(); 
           firestore = firestoreModule.default(); 
+          console.log("Native services instances retrieved."); // Log 5
         }
 
         setFirebaseServices({ app, auth, firestore, error: null });
+        console.log("Firebase services initialized successfully."); // Log 6
 
       } catch (e: any) {
         console.error('Failed to initialize Firebase services:', e);
+        console.log("Initialization failed in catch block."); // Log 7
         setFirebaseServices({ app: null, auth: null, firestore: null, error: e.message });
       } finally {
         setIsReady(true);
+        console.log("setIsReady set to true."); // Log 8
       }
     };
 
@@ -111,7 +118,7 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
   if (!isReady) {
     return <LoadingScreen />;
   }
-  // ... (rest of the component is the same) ...
+
   if (firebaseServices.error) {
     return (
       <View style={{ padding: 20, backgroundColor: 'white' }}>

@@ -6,11 +6,12 @@ import {
     Image,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     StyleSheet,
     View,
 } from 'react-native';
+// Updated import: Removed the old SafeAreaView from react-native
 import { ActivityIndicator, Button, Text, TextInput, useTheme } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context'; // Added the new import
 import { AuthContext } from '../../context/AuthContext';
 import { styles2 } from '../../styles/css'; // Assuming styles are exported
 // import { useFirebase } from '../../context/FirebaseContext'; // Removed this import; it's handled by AuthContext
