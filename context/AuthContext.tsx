@@ -1,13 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
-import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+// Import the specific types needed for assertion
+import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getUser } from '../lib/firestore';
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
+// Import the web Auth type for context consistency
+import type { Auth } from 'firebase/auth';
+
 
 // Function to safely fetch user data with retry logic
+// This function expects the *native* firestore module explicitly as defined in its original signature
 const fetchUserWithRetry = async (firestore: FirebaseFirestoreTypes.Module, uid: string): Promise<User | null> => {
   let userData: User | null = null;
   let retries = 5;
@@ -38,38 +43,38 @@ export const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // auth and firestore are union types (Web | Native)
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Memoize login and logout with useCallback for stable function identities
   const login = useCallback(async (email: string, password: string) => {
-    // *** CRITICAL CHECK IN PLACE ***
     if (!auth || !firestore) {
-      // This error message is caught in login.tsx and displayed
       throw new Error('Firebase services not available during login.');
     }
     try {
-      // --- ORIGINAL V8 SYNTAX FOR NATIVE (@react-native-firebase) ---
-      const authResult = await auth.signInWithEmailAndPassword(email, password);
-      
-      // The onAuthStateChanged listener in useEffect will pick up the user change
-      // and handle fetching userData and setting global state.
+      // Compatibility logic handles the type internally, so this part is fine.
+      if (typeof (auth as any).signInWithEmailAndPassword === 'function') {
+        await (auth as any).signInWithEmailAndPassword(email, password);
+      } else {
+        const { signInWithEmailAndPassword } = await import('firebase/auth');
+        await signInWithEmailAndPassword(auth as Auth, email, password);
+      }
     } catch (error) {
       console.error('Login failed:', error);
-      throw error; // Re-throw so the Login screen can display specific errors
+      throw error; 
     }
   }, [auth, firestore]);
 
   const logout = useCallback(async () => {
-    // *** CRITICAL CHECK IN PLACE ***
     if (!auth) {
         throw new Error('Auth service not available during logout.');
     }
     try {
-      await auth.signOut();
+      // We assume this function is compatible with both web/native for signOut
+      await auth.signOut(); 
       await AsyncStorage.removeItem('user');
-      // The onAuthStateChanged listener in useEffect will pick up the user change (null)
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -88,18 +93,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     let isMounted = true;
-    const subscriber = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthTypes.User | null) => {
+
+    // ERROR 1 FIX: The 'onAuthStateChanged' import from @react-native-firebase/auth 
+    // expects the native module type. We use a type assertion here.
+    const subscriber = onAuthStateChanged(
+      auth as FirebaseAuthTypes.Module, // Assertion applied here
+      async (firebaseUser: FirebaseAuthTypes.User | null) => {
       try {
         if (!isMounted) return;
 
         if (firebaseUser) {
-          // Pass firestore explicitly to the external function
-          const userData = await fetchUserWithRetry(firestore, firebaseUser.uid); 
+          // ERROR 2 FIX: The 'fetchUserWithRetry' function expects the native firestore module.
+          const userData = await fetchUserWithRetry(
+            firestore as FirebaseFirestoreTypes.Module, // Assertion applied here
+            firebaseUser.uid
+          ); 
           if (isMounted) {
             setUser(userData || null);
           }
         } else {
-          // User is signed out
           await AsyncStorage.removeItem('user');
           if (isMounted) {
             setUser(null);
@@ -112,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } finally {
         if (isMounted) {
-          setLoading(false); // Authentication state has been determined (logged in or out)
+          setLoading(false); 
         }
       }
     });
@@ -121,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isMounted = false;
       subscriber();
     };
-  }, [auth, firebaseIsReady, firestore]); // Depend on services and ready state
+  }, [auth, firebaseIsReady, firestore]);
 
   const value = useMemo(() => ({ user, loading, login, logout, isLoggedIn: !!user }), [user, loading, login, logout]);
 

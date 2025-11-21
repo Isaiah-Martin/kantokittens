@@ -1,18 +1,28 @@
-import validator from 'email-validator'; // Assuming you have an email validator
+// screens/(auth)/signup.tsx
+
+import validator from 'email-validator';
 import { Href, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   View,
 } from 'react-native';
+// Use the recommended SafeAreaView
 import { ActivityIndicator, Button, Text, TextInput, useTheme } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { addUser } from '~/lib/firestore';
 import { useFirebase } from '../../context/FirebaseContext';
-import { User } from '../../navigation/types'; // Import the User type
-import { styles2 } from '../../styles/css'; // Assuming styles are exported
+import { User } from '../../navigation/types';
+// Import specific types for native firebase auth module
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// Import the specific native firestore types needed for the assertion
+import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+// Import specific types for web firebase auth module
+import type { Auth } from 'firebase/auth';
+
+import { styles2 } from '../../styles/css';
 
 export default function SignUp() {
   const router = useRouter();
@@ -25,10 +35,9 @@ export default function SignUp() {
     password: '',
   });
   const [password2, setPassWd2] = useState('');
-  const [errorMsg, setErrorMsg] = useState(''); // Consolidated error message state
+  const [errorMsg, setErrorMsg] = useState('');
   const [inPost, setInPost] = useState(false);
 
-  // Helper to update user state dynamically
   const updateUser = (field: keyof typeof user, value: string) => {
     setUser((prevState) => ({ ...prevState, [field]: value }));
   };
@@ -69,18 +78,29 @@ export default function SignUp() {
     // 2. Proceed with Firebase Auth
     setInPost(true);
     try {
-      const userCredential = await auth.createUserWithEmailAndPassword(user.email, user.password);
+      let userCredential;
+
+      // --- V8/V9 COMPATIBILITY LOGIC (for explicit create user call) ---
+      // Check if the expected native v8 method exists (for @react-native-firebase).
+      if (typeof (auth as FirebaseAuthTypes.Module).createUserWithEmailAndPassword === 'function') {
+        userCredential = await (auth as FirebaseAuthTypes.Module).createUserWithEmailAndPassword(user.email, user.password);
+      } 
+      // If not, it's likely the web environment using the v9 modular web SDK.
+      else {
+        // Dynamically import the v9 modular function (requires 'firebase' npm package to be installed)
+        const { createUserWithEmailAndPassword } = await import('firebase/auth');
+        userCredential = await createUserWithEmailAndPassword(auth as Auth, user.email, user.password);
+      }
+      // --- END COMPATIBILITY LOGIC ---
       
       const newUser: User = {
         uid: userCredential.user.uid,
         name: user.name,
         email: user.email,
-        // Add other required fields from your User type here if needed
       };
       
-      await addUser(firestore, newUser);
-
-      // AuthContext listener in the layout will handle the navigation to /(app)
+      await addUser(firestore as FirebaseFirestoreTypes.Module, newUser);
+      // The AuthContext listener will pick up the auth state change and navigate.
       
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
@@ -88,10 +108,11 @@ export default function SignUp() {
       } else if (error.code === 'auth/invalid-email') {
         setErrorMsg('That email address is invalid!');
       } else {
+        // Log the full error for debugging purposes
+        console.error("Signup error:", error); 
         setErrorMsg(error.message || 'An error occurred during sign up.');
       }
     } finally {
-      // Set inPost to false in finally block to ensure loading state finishes
       setInPost(false); 
     }
   }
@@ -102,16 +123,15 @@ export default function SignUp() {
     resetErrMsg();
   }
   
-  // Use inPost state to disable fields while loading
   const isUIDisabled = inPost;
 
   return (
-    <SafeAreaView style={styles2.container}>
+    // Use the react-native-safe-area-context SafeAreaView
+    <SafeAreaView style={styles2.container}> 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles2.container}>
         <ScrollView contentContainerStyle={styles2.container}>
-          {/* Removed empty View style={styles2.loginMain} */}
           <View style={styles2.mainContainer}>
             <View style={styles2.itemCenter}>
               <Text style={styles2.titleText}>Join to Place Booking</Text>
@@ -160,7 +180,6 @@ export default function SignUp() {
               style={{marginTop: 10}}
             />
 
-            {/* Display combined error message */}
             {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
             
             <View style={[styles2.itemLeft, { marginTop: 20 }]}>

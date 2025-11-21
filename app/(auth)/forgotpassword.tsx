@@ -4,24 +4,31 @@ import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     View,
 } from 'react-native';
+// Use SafeAreaView from the context library
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFirebase } from '../../context/FirebaseContext';
 import { styles2 } from '../../styles/css';
+// Import specific native auth type needed for the assertion
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// Import web auth type for completeness if needed for web compatibility logic
+import type { Auth } from 'firebase/auth';
+
 
 export default function ForgotPassword() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { auth } = useFirebase();
+    // auth is a union type (Web | Native)
+    const { auth } = useFirebase(); 
     const theme = useTheme();
 
     const userEmailFromRoute = typeof params.userEmail === 'string' ? params.userEmail : undefined;
     const [email, setEmail] = useState(userEmailFromRoute || '');
-    const [errorMsg, setErrorMsg] = useState(''); // Consolidated error message state
+    const [errorMsg, setErrorMsg] = useState('');
     const [inPost, setInPost] = useState(false);
-    const [message, setMessage] = useState(''); // Success message state
+    const [message, setMessage] = useState('');
 
     const handleSendResetEmail = async () => {
         setErrorMsg('');
@@ -44,9 +51,21 @@ export default function ForgotPassword() {
         
         setInPost(true);
         try {
-            await auth.sendPasswordResetEmail(email);
+            // --- V8/V9 COMPATIBILITY LOGIC ---
+            // Check if the expected native v8 method exists (for @react-native-firebase).
+            if (typeof (auth as FirebaseAuthTypes.Module).sendPasswordResetEmail === 'function') {
+                 await (auth as FirebaseAuthTypes.Module).sendPasswordResetEmail(email);
+            } 
+            // If not, it's likely the web environment using the v9 modular web SDK.
+            else {
+                // Dynamically import the v9 modular function 
+                const { sendPasswordResetEmail } = await import('firebase/auth');
+                await sendPasswordResetEmail(auth as Auth, email);
+            }
+            // --- END COMPATIBILITY LOGIC ---
+
             setMessage("Password reset email sent. Please check your inbox.");
-            // ErrorMsg cleared by setMessage
+            
         } catch (error: any) {
             console.error("Password reset error:", error);
             if (error.code === 'auth/user-not-found') {
@@ -54,7 +73,7 @@ export default function ForgotPassword() {
             } else {
                 setErrorMsg("An error occurred. Please try again.");
             }
-            setMessage(''); // Clear success message if an error occurs
+            setMessage('');
         } finally {
             setInPost(false);
         }
@@ -63,11 +82,11 @@ export default function ForgotPassword() {
     const isUIDisabled = inPost;
 
     return (
+        // Use the react-native-safe-area-context SafeAreaView
         <SafeAreaView style={styles2.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={styles2.container}>
-                {/* styles2.loginMain or styles2.mainContainer should handle responsive width, e.g., maxWidth: 400 on web */}
                 <View style={styles2.loginMain}> 
                     <Text style={styles2.latoFont3}>Forgot Password?</Text>
                     <Text style={styles2.latoFont2}>Enter email for password reset link.</Text>
@@ -77,11 +96,10 @@ export default function ForgotPassword() {
                         onChangeText={setEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
-                        error={!!errorMsg} // Use errorMsg state for TextInput error indicator
+                        error={!!errorMsg} 
                         style={styles2.input}
                         disabled={isUIDisabled}
                     />
-                    {/* Use a single Text component for error/success display */}
                     {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
                     {!!message && <Text style={{ color: 'green', marginTop: 10 }}>{message}</Text>}
                     
