@@ -1,23 +1,19 @@
-// context/FirebaseContext.tsx (Revised for Modular Compatibility)
+// context/FirebaseContext.tsx (Strictly Type-Safe Revision for Cross-Platform Compatibility)
 
 import Constants from 'expo-constants';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Platform, Text, View } from 'react-native';
-import LoadingScreen from '~/loading'; // Adjust path if needed
+import LoadingScreen from '~/loading';
 
-// --- Type Definitions ---
-// Use specific types from the libraries for better type safety
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Firestore } from 'firebase/firestore';
-// Native types
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+// --- Type Definitions (Use generic 'FirebaseService' type as a universal bridge) ---
+// We cannot use the explicit types from the specific libraries here, 
+// as importing one library's types can cause resolution issues on the wrong platform.
+type FirebaseService = any; 
 
 interface FirebaseContextProps {
-  app: FirebaseApp | any; // 'any' used to accommodate native app type
-  auth: Auth | FirebaseAuthTypes.Module | null;
-  firestore: Firestore | FirebaseFirestoreTypes.Module | null;
+  app: FirebaseService | null;
+  auth: FirebaseService | null;
+  firestore: FirebaseService | null;
   isReady: boolean;
 }
 
@@ -36,9 +32,9 @@ interface FirebaseProviderProps {
 
 export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
   const [firebaseServices, setFirebaseServices] = useState<{
-    app: FirebaseApp | any;
-    auth: Auth | FirebaseAuthTypes.Module | null;
-    firestore: Firestore | FirebaseFirestoreTypes.Module | null;
+    app: FirebaseService | null;
+    auth: FirebaseService | null;
+    firestore: FirebaseService | null;
     error: string | null;
   }>({
     app: null,
@@ -53,18 +49,18 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
     const initialize = async () => {
       console.log("Initialization started in FirebaseContext.");
       try {
-        let app: FirebaseApp | any;
-        let auth: Auth | FirebaseAuthTypes.Module;
-        let firestore: Firestore | FirebaseFirestoreTypes.Module;
+        // Use the generic type for local variables
+        let appInstance: FirebaseService;
+        let authInstance: FirebaseService;
+        let firestoreInstance: FirebaseService;
 
         if (Platform.OS === 'web') {
-          // *** WEB PLATFORM IMPORTS & CONFIGURATION ***
+          // *** WEB PLATFORM: Dynamic imports guarantee web libraries are used ***
           console.log("Initializing for web platform.");
           const { initializeApp, getApps, getApp } = await import('firebase/app');
           const { getAuth } = await import('firebase/auth');
           const { initializeFirestore } = await import('firebase/firestore');
           
-          // Use a helper function to safely access constants
           const getExtraConstant = (key: string) => Constants.expoConfig?.extra?.[key];
           
           const firebaseConfig = {
@@ -77,39 +73,33 @@ export const FirebaseProvider = ({ children }: FirebaseProviderProps) => {
             databaseURL: getExtraConstant('EXPO_PUBLIC_FIREBASE_DATABASE_URL'),
           };
 
-          let appInstance;
           if (!getApps().length) {
             appInstance = initializeApp(firebaseConfig);
           } else {
             appInstance = getApp();
           }
 
-          app = appInstance;
-          auth = getAuth(appInstance);
-          
-          firestore = initializeFirestore(appInstance, {
+          authInstance = getAuth(appInstance);
+          firestoreInstance = initializeFirestore(appInstance, {
             experimentalForceLongPolling: true, 
             synchronizeTabs: true, 
           } as any); 
           
         } else {
-          // *** NATIVE (iOS/Android) PLATFORM (Updated to modular style) ***
+          // *** NATIVE (iOS/Android) PLATFORM: Dynamic imports guarantee native libraries are used ***
           console.log("Initializing for native platform (iOS/Android).");
-          // The native libraries expose their services as the default export of the package
           const authModule = await import('@react-native-firebase/auth');
           const firestoreModule = await import('@react-native-firebase/firestore');
           const appModule = await import('@react-native-firebase/app');
           console.log("Native modules imported.");
 
-          // Use the getApp() function from the app module to avoid deprecation warnings
-          app = appModule.getApp(); 
-          // Access services via default exports
-          auth = authModule.default(); 
-          firestore = firestoreModule.default(); 
+          appInstance = appModule.getApp(); 
+          authInstance = authModule.default(); 
+          firestoreInstance = firestoreModule.default(); 
           console.log("Native services instances retrieved.");
         }
 
-        setFirebaseServices({ app, auth, firestore, error: null });
+        setFirebaseServices({ app: appInstance, auth: authInstance, firestore: firestoreInstance, error: null });
         console.log("Firebase services initialized successfully.");
 
       } catch (e: any) {

@@ -1,3 +1,7 @@
+// app/_layout.tsx
+
+// --- REMOVED USER-AGENT WORKAROUND ---
+
 import { Slot, SplashScreen } from 'expo-router';
 import { LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

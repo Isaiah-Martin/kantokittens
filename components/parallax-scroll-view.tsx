@@ -23,10 +23,13 @@ export default function ParallaxScrollView({
   headerImage,
   headerBackgroundColor,
 }: Props) {
+  console.log("ParallaxScrollView: Component rendering started."); 
+
   const backgroundColor = useThemeColor({}, 'background');
   const colorScheme = useColorScheme() ?? 'light';
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollOffset(scrollRef);
+  
   const headerAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -44,10 +47,13 @@ export default function ParallaxScrollView({
     };
   });
 
+  console.log("ParallaxScrollView: Hooks executed, returning JSX."); 
+
   return (
     <Animated.ScrollView
       ref={scrollRef}
-      style={{ backgroundColor, flex: 1 }}
+      // FIX APPLIED HERE: Use the container style with flex: 1
+      style={[styles.container, { backgroundColor }]}
       scrollEventThrottle={16}>
       <Animated.View
         style={[
@@ -64,14 +70,15 @@ export default function ParallaxScrollView({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // FIX APPLIED HERE: Ensures the ScrollView takes up the entire screen height
+    flex: 1, 
   },
   header: {
     height: HEADER_HEIGHT,
     overflow: 'hidden',
   },
   content: {
-    flex: 1,
+    // Content will now size correctly within the flex: 1 parent
     padding: 32,
     gap: 8,
     overflow: 'hidden',
