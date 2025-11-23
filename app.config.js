@@ -3,7 +3,12 @@
 import 'dotenv/config';
 
 export default ({ config }) => {
-  return {
+  // Define variables for clarity and use in conditional checks
+  const iosGoogleServicesFile = process.env.GOOGLE_SERVICES_PLIST;
+  const androidGoogleServicesFile = process.env.GOOGLE_SERVICES_FILE;
+
+  // Build the configuration object conditionally
+  const newConfig = {
     ...config,
     // Add the 'extra' field to store your public environment variables
     extra: {
@@ -16,23 +21,22 @@ export default ({ config }) => {
       EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       EXPO_PUBLIC_FIREBASE_DATABASE_URL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
       eas: {
-        projectId: "550817e5-f337-497e-9073-5bf83bb53762" // Replace with your Expo Application Services Project ID
+        projectId: "550817e5-f337-497e-9073-5bf83bb53762"
       }
     },
-    // --- NATIVE CONFIGURATION BLOCKS ---
+    // --- NATIVE CONFIGURATION BLOCKS (Using conditional spread syntax) ---
     android: {
-      // Keep existing android configuration
       ...config.android,
-      // Tell the config plugin to look for the file in the GOOGLE_SERVICES_FILE environment variable
-      googleServicesFile: process.env.GOOGLE_SERVICES_FILE,
+      // Only add the googleServicesFile property if the env var is defined
+      ...(androidGoogleServicesFile && { googleServicesFile: androidGoogleServicesFile }),
     },
     ios: {
-      // Keep existing ios configuration
       ...config.ios,
-      // Tell the config plugin to look for the file in the GOOGLE_SERVICES_PLIST environment variable
-      // Ensure GOOGLE_SERVICES_PLIST is the exact name of your secret on Expo Dev site
-      googleServicesFile: process.env.GOOGLE_SERVICES_PLIST,
+      // Only add the googleServicesFile property if the env var is defined
+      ...(iosGoogleServicesFile && { googleServicesFile: iosGoogleServicesFile }),
     },
     // ------------------------------------
   };
+
+  return newConfig;
 };
