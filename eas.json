@@ -6,7 +6,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      // ADDED: Environment variable pointing to the local file path
+      "env": {
+        "GOOGLE_SERVICES_FILE": "./GoogleService-Info.plist"
+      }
     },
     "preview": {
       "distribution": "internal"
