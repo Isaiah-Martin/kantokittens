@@ -1,5 +1,5 @@
 // app.config.js
-// This line loads variables from your .env file into process.env
+// This line loads variables from your .env file into process.env (for local use)
 import 'dotenv/config';
 
 export default ({ config }) => {
@@ -15,10 +15,24 @@ export default ({ config }) => {
       EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       EXPO_PUBLIC_FIREBASE_DATABASE_URL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
-      // You can add other configuration items here if needed
       eas: {
         projectId: "550817e5-f337-497e-9073-5bf83bb53762" // Replace with your Expo Application Services Project ID
       }
     },
+    // --- NATIVE CONFIGURATION BLOCKS ---
+    android: {
+      // Keep existing android configuration
+      ...config.android,
+      // Tell the config plugin to look for the file in the GOOGLE_SERVICES_FILE environment variable
+      googleServicesFile: process.env.GOOGLE_SERVICES_FILE,
+    },
+    ios: {
+      // Keep existing ios configuration
+      ...config.ios,
+      // Tell the config plugin to look for the file in the GOOGLE_SERVICES_PLIST environment variable
+      // Ensure GOOGLE_SERVICES_PLIST is the exact name of your secret on Expo Dev site
+      googleServicesFile: process.env.GOOGLE_SERVICES_PLIST,
+    },
+    // ------------------------------------
   };
 };
