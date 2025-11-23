@@ -17,7 +17,7 @@ export default ({ config }) => {
       EXPO_PUBLIC_FIREBASE_DATABASE_URL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
       // You can add other configuration items here if needed
       eas: {
-        projectId: "YOUR_EAS_PROJECT_ID" // Replace with your Expo Application Services Project ID
+        projectId: "550817e5-f337-497e-9073-5bf83bb53762" // Replace with your Expo Application Services Project ID
       }
     },
   };
