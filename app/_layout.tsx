@@ -1,14 +1,12 @@
 // app/_layout.tsx
 
-// --- REMOVED USER-AGENT WORKAROUND ---
-
 import { Slot, SplashScreen } from 'expo-router';
+import { useContext, useEffect } from 'react'; // Import useContext and useEffect
 import { LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import { AuthProvider } from '../context/AuthContext';
+import { AuthContext, AuthProvider } from '../context/AuthContext';
 import { FirebaseProvider } from '../context/FirebaseContext';
-// Import the new navigation hook
 import { useAuthRedirect } from '../hooks/use-auth-redirect';
 
 // Prevent the native splash screen from disappearing automatically
@@ -23,9 +21,18 @@ if (__DEV__) {
 function AppNavigationWrapper() {
     // This hook contains all the redirect logic
     useAuthRedirect(); 
+    
+    // Get the loading state from AuthContext
+    const { loading } = useContext(AuthContext);
+
+    // Add useEffect to hide the splash screen once loading is complete
+    useEffect(() => {
+        if (!loading) {
+            SplashScreen.hideAsync();
+        }
+    }, [loading]); // Run this effect when the loading state changes
 
     // The Slot renders the current page based on the router state
-    // The hook ensures the router state is correct before anything renders
     return <Slot />;
 }
 

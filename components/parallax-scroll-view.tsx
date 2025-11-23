@@ -52,7 +52,7 @@ export default function ParallaxScrollView({
   return (
     <Animated.ScrollView
       ref={scrollRef}
-      // FIX APPLIED HERE: Use the container style with flex: 1
+      // FIX APPLIED HERE: Use the container style with flex: 1 and the dynamic background color
       style={[styles.container, { backgroundColor }]}
       scrollEventThrottle={16}>
       <Animated.View
@@ -63,6 +63,7 @@ export default function ParallaxScrollView({
         ]}>
         {headerImage}
       </Animated.View>
+      {/* The ThemedView automatically handles background colors based on the theme */}
       <ThemedView style={styles.content}>{children}</ThemedView>
     </Animated.ScrollView>
   );
