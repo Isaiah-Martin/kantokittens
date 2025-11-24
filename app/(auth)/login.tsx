@@ -1,4 +1,4 @@
-// app/(auth)/login.tsx (Revised with optimized button spacing and width)
+// app/(auth)/login.tsx (Revised with optimized button spacing and width and functional logic)
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { Href, useRouter } from 'expo-router';
@@ -16,6 +16,8 @@ import { AuthContext } from '../../context/AuthContext';
 
 export default function Login() {
     const router = useRouter();
+    // Assuming AuthContext provides a function 'login' that accepts (email, password)
+    // and a 'loading' boolean state.
     const { login, loading } = useContext(AuthContext); 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -24,12 +26,35 @@ export default function Login() {
     const theme = useTheme();
     const primaryColor = theme.colors.primary;
     
+    // --- Functional Logic Implementation ---
     const handleLogin = async () => {
-        // ... (handleLogin logic remains the same) ...
+        setErrorMsg(''); // Clear previous errors
+        if (!email || !password) {
+            setErrorMsg('Please enter both email and password.');
+            return;
+        }
+
+        try {
+            // Call the login function from your AuthContext
+            const success = await login(email, password); 
+            if (success) {
+                // The AuthContext should ideally handle navigation to the main app flow upon success.
+                console.log('Login successful, context should handle navigation.');
+            } else {
+                // If login function returns false (or handles its own errors internally)
+                setErrorMsg('Login failed. Please check your credentials.');
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            setErrorMsg(`An error occurred: ${error.message || 'Unknown error'}`);
+        }
     };
 
     function resetForm() {
-        // ... (resetForm logic remains the same) ...
+        console.log('Resetting form fields.');
+        setEmail('');
+        setPassword('');
+        setErrorMsg('');
     }
 
     const isUIDisabled = loading;
@@ -93,9 +118,11 @@ export default function Login() {
                             style={styles.input}
                         />
 
+                        {/* Error message display */}
                         {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
                         
                         <View style={{ alignItems: 'center' }}>
+                            {/* Forgot Password Button - Uses expo-router for navigation */}
                             <Button
                                 mode="text"
                                 uppercase={false}
@@ -105,29 +132,32 @@ export default function Login() {
                                 Forgot Password?
                             </Button>
                         </View>
-                        {/* Added justifyContent: 'space-between' for even distribution of buttons */}
+                        
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                            {/* Log In Button - Calls handleLogin function */}
                             <Button
                                 mode="contained"
-                                style={styles.dynamicButton} // Use dynamicButton style below
-                                onPress={handleLogin}
+                                style={styles.dynamicButton} 
+                                onPress={handleLogin} // This connects the button to the logic
                                 disabled={isUIDisabled}
                                 loading={isUIDisabled}
                             >
                                 Log In
                             </Button>
+                            {/* Reset Button - Calls resetForm function */}
                             <Button
                                 mode="contained"
-                                style={styles.dynamicButton} // Use dynamicButton style below
-                                onPress={resetForm}
+                                style={styles.dynamicButton} 
+                                onPress={resetForm} // This connects the button to the logic
                                 disabled={isUIDisabled}
                             >
                                 Reset
                             </Button>
+                            {/* Sign Up Button - Uses expo-router for navigation */}
                             <Button
                                 mode="contained" 
-                                style={styles.dynamicButton} // Use dynamicButton style below
-                                onPress={() => router.push('/(auth)/signup' as Href)}
+                                style={styles.dynamicButton} 
+                                onPress={() => router.push('/(auth)/signup' as Href)} // This connects the button to the navigation
                                 disabled={isUIDisabled}
                             >
                                 Sign Up
@@ -135,8 +165,9 @@ export default function Login() {
                         </View>
                     </View>
                 </KeyboardAvoidingView>
+                {/* Simplified loading indicator display */}
                 {isUIDisabled && (
-                  <View style={{ /* simple loading styles if needed */ }}>
+                  <View style={styles.loadingOverlay}>
                       <ActivityIndicator size="large" animating={true} color={primaryColor} />
                   </View>
                 )}
@@ -160,15 +191,17 @@ const styles = StyleSheet.create({
     input: {
         height: 50, 
     },
-    // New style for buttons: dynamic sizing based on content
     dynamicButton: {
         backgroundColor: 'black', 
         height: 50, 
         justifyContent: 'center',
-        // No fixed width, lets the content dictate size
+        flexGrow: 1, // Allows buttons to share available space evenly
     },
-    buttonText: {
-        color: '#D98CBF',
-        tintColor: '#D98CBF'
+    loadingOverlay: {
+        position: 'absolute', // Position over content
+        top: 0, left: 0, right: 0, bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        // Optional: add a slight overlay color here if desired
     }
 });
