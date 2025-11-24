@@ -1,4 +1,4 @@
-// context/AuthContext.tsx (Strict Platform Isolation & TypeScript Fix)
+// context/AuthContext.tsx (Minor Adjustments)
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -11,7 +11,6 @@ import { FirebaseContext } from './FirebaseContext';
 type FirebaseService = any;
 
 
-// Update fetchUserWithRetry to accept the generic type
 const fetchUserWithRetry = async (
   firestore: FirebaseService, 
   uid: string
@@ -20,7 +19,6 @@ const fetchUserWithRetry = async (
   let retries = 5;
   while (retries > 0) {
     try {
-      // getUser should handle whatever object type it receives
       userData = await getUser(firestore, uid); 
       return userData;
     } catch (error: any) {
@@ -39,14 +37,13 @@ const fetchUserWithRetry = async (
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => {},
+  // login is async void as it handles navigation internally via the listener
+  login: async () => {}, 
   logout: async () => {},
   isLoggedIn: false,
 });
 
-// FIX APPLIED HERE: Corrected props type definition
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // auth and firestore are now fully generic types from FirebaseContext
   const { auth, firestore, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,17 +52,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!auth || !firestore) {
       throw new Error('Firebase services not available during login.');
     }
+    // Set loading state here manually for immediate feedback in login.tsx
+    // The useEffect listener will handle turning loading OFF later
+    setLoading(true); 
     try {
-      // Compatibility logic relies on dynamic imports and typeof checks
       if (typeof (auth as any).signInWithEmailAndPassword === 'function') {
         await (auth as any).signInWithEmailAndPassword(email, password);
       } else {
         const { signInWithEmailAndPassword } = await import('firebase/auth');
         await signInWithEmailAndPassword(auth, email, password);
       }
+      // If sign in is successful, the onAuthStateChanged listener handles the rest
     } catch (error) {
       console.error('Login failed:', error);
-      throw error; 
+      setLoading(false); // Make sure loading is turned off on failure
+      throw error; // Re-throw the error so login.tsx can catch and display it
     }
   }, [auth, firestore]);
 
@@ -73,12 +74,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!auth) {
         throw new Error('Auth service not available during logout.');
     }
+    setLoading(true); // Indicate loading while signing out
     try {
-      // signOut is compatible across web and native modular APIs
       await auth.signOut(); 
       await AsyncStorage.removeItem('user');
+      setLoading(false); // Loading is done
     } catch (error) {
       console.error('Logout failed:', error);
+      setLoading(false);
     }
   }, [auth]);
 
@@ -96,13 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
     let subscriber: () => void;
 
-    // --- PLATFORM-SPECIFIC AUTH STATE LISTENER USING DYNAMIC IMPORTS ---
+    // --- The rest of the useEffect logic remains unchanged as it's solid ---
 
-    if (Platform.OS === 'web') {
-      // Use the web modular onAuthStateChanged function
-      const { onAuthStateChanged: onAuthStateChangedWeb } = require('firebase/auth');
-      
-      subscriber = onAuthStateChangedWeb(auth, async (firebaseUser: any) => {
+    // Use a unified function reference since the implementation is identical
+    const handleAuthStateChange = async (firebaseUser: any | null) => {
+      try {
         if (!isMounted) return;
         if (firebaseUser) {
           const userData = await fetchUserWithRetry(firestore, firebaseUser.uid); 
@@ -111,31 +112,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await AsyncStorage.removeItem('user');
           if (isMounted) setUser(null);
         }
-        if (isMounted) setLoading(false);
-      });
-    } else {
-      // Use dynamic import for the NATIVE @react-native-firebase/auth function
-      const { onAuthStateChanged: onAuthStateChangedNative } = require('@react-native-firebase/auth');
+      } catch (error) {
+        console.error("Error during auth state change:", error);
+        if (isMounted) setUser(null);
+      } finally {
+        // Ensure loading is set to false after the initial check/user fetch
+        if (isMounted) setLoading(false); 
+      }
+    };
 
-      subscriber = onAuthStateChangedNative(
-        auth, 
-        async (firebaseUser: any | null) => { 
-        try {
-          if (!isMounted) return;
-          if (firebaseUser) {
-            const userData = await fetchUserWithRetry(firestore, firebaseUser.uid); 
-            if (isMounted) setUser(userData || null);
-          } else {
-            await AsyncStorage.removeItem('user');
-            if (isMounted) setUser(null);
-          }
-        } catch (error) {
-          console.error("Error during auth state change:", error);
-          if (isMounted) setUser(null);
-        } finally {
-          if (isMounted) setLoading(false); 
-        }
-      });
+
+    if (Platform.OS === 'web') {
+      const { onAuthStateChanged: onAuthStateChangedWeb } = require('firebase/auth');
+      subscriber = onAuthStateChangedWeb(auth, handleAuthStateChange);
+    } else {
+      const { onAuthStateChanged: onAuthStateChangedNative } = require('@react-native-firebase/auth');
+      subscriber = onAuthStateChangedNative(auth, handleAuthStateChange);
     }
 
     return () => {
