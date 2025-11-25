@@ -24,14 +24,14 @@ interface ActivitySchedule {
 
 // --- MOCK DATA SOURCE ---
 const mockActivities: ActivitySchedule[] = [
-  { "Activity": "Yoga", "DaysOfWeek": ["Monday", "Wednesday", "Thursday", "Saturday"], "HoursOfDay": ["09:00", "11:00", "15:00"] },
-  { "Activity": "Cat Playtime", "DaysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], "HoursOfDay": ["13:00", "14:00", "15:00", "16:00"] },
-  { "Activity": "Movie Night", "DaysOfWeek": ["Wednesday", "Friday", "Saturday"], "HoursOfDay": ["19:00"] },
-  { "Activity": "Coffee Study Session", "DaysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "HoursOfDay": ["09:00", "10:00", "11:00", "13:00", "14:00"] }
+  { "Activity": "Cat Heaven $20", "DaysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], "HoursOfDay": ["13:00", "14:00", "15:00", "16:00"] },
+  { "Activity": "Caturday Yoga $35", "DaysOfWeek": ["Saturday", "Sunday"], "HoursOfDay": ["09:00", "11:00", "15:00"] },
+  { "Activity": "Mewvie Nights $30", "DaysOfWeek": ["Wednesday", "Friday", "Saturday"], "HoursOfDay": ["19:00"] },
+  { "Activity": "CatNap Sound Bath $30", "DaysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "HoursOfDay": ["09:00", "10:00", "11:00", "13:00", "14:00"] }
 ];
 
 const BookingAddScreen = () => {
-  // We initialize the state variables with the *first* available mock data
+  // Initialize state variables with the *first* available mock data to ensure all fields have a default value
   const [activities] = useState<ActivitySchedule[]>(mockActivities); 
   const [selectedActivityName, setSelectedActivityName] = useState<string | undefined>(mockActivities[0]?.Activity);
   const [selectedDay, setSelectedDay] = useState<string | undefined>(mockActivities[0]?.DaysOfWeek[0]);
@@ -55,18 +55,12 @@ const BookingAddScreen = () => {
           `You are booked for ${selectedActivityName} on ${selectedDay} at ${selectedTime}.`,
         );
 
-        // We can choose not to reset the form here if we want to immediately book another time for the same choices
-        // setSelectedActivityName(undefined);
-        // setSelectedDay(undefined);
-        // setSelectedTime(undefined);
-
       } catch (error) {
         Alert.alert("Error", "There was an issue processing your booking. Please try again.");
       } finally {
         setIsSubmitting(false);
       }
     } else {
-      // This alert should ideally never show up now that states are initialized
       Alert.alert("Missing Information", "Please select an activity, day, and time.");
     }
   };
@@ -82,10 +76,12 @@ const BookingAddScreen = () => {
   }
 
   return (
+    // Use the correct SafeAreaView from 'react-native-safe-area-context'
     <SafeAreaView style={styles.safeArea}>
+      {/* Use ScrollView to ensure content is interactive and scrollable if needed */}
       <ScrollView contentContainerStyle={styles.scrollContentContainer}>
         <Text style={styles.title}>Schedule a Booking</Text>
-
+        <Text style={styles.subtitle}>Scroll Activities for Time and Day</Text>
         {/* Activity Picker - Always visible */}
         <Text style={styles.label}>Choose Activity:</Text>
         <View style={styles.pickerContainer}>
@@ -95,6 +91,7 @@ const BookingAddScreen = () => {
               // When activity changes, we reset dependent selections to the first available options
               setSelectedActivityName(itemValue);
               const newActivity = activities.find(a => a.Activity === itemValue);
+              // Ensure we select a default Day and Time for immediate visibility/selection
               setSelectedDay(newActivity?.DaysOfWeek[0] || undefined);
               setSelectedTime(newActivity?.HoursOfDay[0] || undefined);
             }}
@@ -108,7 +105,7 @@ const BookingAddScreen = () => {
         {/* Horizontal layout for Day and Time Pickers */}
         <View style={styles.horizontalPickerRow}>
           
-          {/* Day Picker - Always visible (if activity is selected, which it is by default) */}
+          {/* Day Picker column */}
           <View style={styles.pickerColumn}>
             <Text style={styles.label}>Choose Day:</Text>
             <View style={styles.pickerContainer}>
@@ -118,7 +115,6 @@ const BookingAddScreen = () => {
                   setSelectedDay(itemValue);
                 }}
               >
-                {/* Use the currently selected activity's days */}
                 {selectedActivity?.DaysOfWeek.map((day) => (
                   <Picker.Item key={day} label={day} value={day} color={"#4A3728"}/>
                 )) || []}
@@ -126,7 +122,7 @@ const BookingAddScreen = () => {
             </View>
           </View>
           
-          {/* Time Picker - Always visible (if activity is selected) */}
+          {/* Time Picker column */}
           <View style={styles.pickerColumn}>
             <Text style={styles.label}>Choose Time:</Text>
             <View style={styles.pickerContainer}>
@@ -134,7 +130,6 @@ const BookingAddScreen = () => {
                 selectedValue={selectedTime}
                 onValueChange={(itemValue: string | undefined) => setSelectedTime(itemValue)}
               >
-                {/* Use the currently selected activity's hours */}
                 {selectedActivity?.HoursOfDay.map((time) => (
                   <Picker.Item key={time} label={time} value={time} color={"#4A3728"}/>
                 )) || []}
@@ -148,7 +143,7 @@ const BookingAddScreen = () => {
             title={isSubmitting ? "Submitting..." : "Confirm Booking"}
             onPress={handleBookingConfirm}
             disabled={isSubmitting || !selectedActivityName || !selectedDay || !selectedTime}
-            color={primaryColor}
+            color={'#FCFBF6'}
           />
         </View>
       </ScrollView>
@@ -159,7 +154,7 @@ const BookingAddScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FCFBF6', // Using the off-white background color
+    backgroundColor: '#F3A78F', // Using the off-white background color
   },
   scrollContentContainer: {
     flexGrow: 1, 
@@ -180,36 +175,43 @@ const styles = StyleSheet.create({
     marginTop: 10, 
     color: '#4A3728', // Dark text color
   },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+    color: '#FCFBF6', // Dark text color
+  },
   label: {
     fontSize: 16,
     marginBottom: 5,
-    // marginTop removed from label here as it's handled by padding/margins of containers
     color: '#4A3728',
     fontWeight: '500',
   },
-  // New style to wrap the two bottom pickers horizontally
+  // Style to wrap the two bottom pickers horizontally
   horizontalPickerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 15,
+    marginHorizontal: -5, // Negative margin to offset column margins
   },
-  // New style for individual columns in the horizontal row
+  // Style for individual columns in the horizontal row
   pickerColumn: {
     flex: 1, // Ensures even distribution of space
-    marginHorizontal: 5, // Adds a little spacing between the columns
+    marginHorizontal: 5, // Adds spacing between the columns
   },
   pickerContainer: {
     borderWidth: 1,
     borderColor: '#4A3728', // Darker border
     borderRadius: 8,
-    // marginBottom removed here because it's inside the horizontal row
     backgroundColor: '#FFFFFF', // White background for pickers
     justifyContent: 'center',
     overflow: 'hidden',
     height: 60, // Standardize height for horizontal alignment
   },
   buttonContainer: {
-    marginTop: 30, // Add more margin above the button now that pickers are horizontal
+    marginTop: 30, 
+    backgroundColor: '#52392F'
   },
 });
 
