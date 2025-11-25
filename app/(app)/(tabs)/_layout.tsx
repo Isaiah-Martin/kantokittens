@@ -5,9 +5,9 @@ import React from 'react';
 import { Text } from 'react-native';
 
 // Define the brand colors
-const primaryColor = '#EBC5F1'; // Updated background color
-const inactiveBg = '#f0f0f0';
-const activeTint = '#000000'; // Black text/icon for contrast
+const primaryColor = '#52392F'; // Updated background color
+const inactiveBg = '#FCFBF6';
+const activeTint = '#FCFBF6'; // Black text/icon for contrast
 
 export default function TabLayout() {
 
@@ -15,7 +15,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: activeTint, // Icons/text when active (Black for contrast)
-        tabBarInactiveTintColor: '#888', // Icons/text when inactive
+        tabBarInactiveTintColor: '#52392F', // Icons/text when inactive
         headerShown: false, // Hides headers globally for the tab navigator
       }}>
       

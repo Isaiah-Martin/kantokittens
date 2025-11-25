@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactElement } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedRef,
@@ -13,15 +13,22 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 const HEADER_HEIGHT = 250;
 
+// Update the Props type definition to include standard ScrollView props we might want to pass through
 type Props = PropsWithChildren<{
   headerImage: ReactElement;
   headerBackgroundColor: { dark: string; light: string };
+  // Optionally add specific styles for the content wrapper (the ThemedView)
+  contentContainerStyle?: ViewStyle; 
+  // Add other standard ScrollView props if needed, e.g., style, indicatorStyle
+  style?: ViewStyle;
 }>;
 
 export default function ParallaxScrollView({
   children,
   headerImage,
   headerBackgroundColor,
+  contentContainerStyle, // Destructure the new prop
+  style, // Destructure the new prop
 }: Props) {
   console.log("ParallaxScrollView: Component rendering started."); 
 
@@ -52,8 +59,10 @@ export default function ParallaxScrollView({
   return (
     <Animated.ScrollView
       ref={scrollRef}
-      // FIX APPLIED HERE: Use the container style with flex: 1 and the dynamic background color
-      style={[styles.container, { backgroundColor }]}
+      // Apply the base container styles and any additional style props passed in
+      style={[styles.container, { backgroundColor }, style]}
+      // Pass the standard 'contentContainerStyle' to the underlying ScrollView via this prop name
+      contentContainerStyle={contentContainerStyle} 
       scrollEventThrottle={16}>
       <Animated.View
         style={[
@@ -63,15 +72,21 @@ export default function ParallaxScrollView({
         ]}>
         {headerImage}
       </Animated.View>
-      {/* The ThemedView automatically handles background colors based on the theme */}
-      <ThemedView style={styles.content}>{children}</ThemedView>
+      {/* 
+        The content wrapper used in the original code. 
+        It needs some adjustment to handle the passed 'contentContainerStyle' if we want to use it for padding/gap.
+        If you prefer passing it to the Animated.ScrollView directly as the *actual* contentContainerStyle prop, 
+        you need to adjust the structure slightly, as the header is typically an absolute positioned element *over* the scroll view's content offset.
+
+        If sticking to the original template's structure (ThemedView acts as the content wrapper):
+      */}
+      <ThemedView style={[styles.content, contentContainerStyle]}>{children}</ThemedView>
     </Animated.ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    // FIX APPLIED HERE: Ensures the ScrollView takes up the entire screen height
     flex: 1, 
   },
   header: {
@@ -79,9 +94,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   content: {
-    // Content will now size correctly within the flex: 1 parent
     padding: 32,
     gap: 8,
     overflow: 'hidden',
+    // Note: The ThemedView here is a direct child of the ScrollView, positioned after the Header View. 
+    // The library manages the necessary top padding for the ScrollView content automatically somewhere else 
+    // or assumes the first child (ThemedView) needs to accommodate the fixed header height.
   },
 });
