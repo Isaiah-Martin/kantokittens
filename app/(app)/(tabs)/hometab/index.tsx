@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { Alert, Dimensions, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Define the brand colors
-const backgroundColor = '#EBC5F1'; // Peach Content Background Color
+const backgroundColor = '#F3A78F'; // Peach Content Background Color
 const textColor = '#FCFBF6'; // Ivory Shade Text
 const buttonColor = '#52392F'; // Royal Brown button
 
@@ -76,32 +76,32 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end', // Aligns logo to the right
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
     width: '100%',
   },
   logo: {
-    width: screenWidth * 0.37, // Size for presence
-    height: screenWidth * 0.45, 
+    width: screenWidth * 0.43, // Size for presence
+    height: screenWidth * 0.51, 
   },
   contentArea: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 10,
   },
   welcomeText: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: textColor,
+    color: '#4A3728',
     marginBottom: 10,
     textAlign: 'center',
   },
   instructionText: {
     fontSize: 16,
-    color: textColor,
+    color: '#4A3728',
     marginBottom: 20,
     textAlign: 'center',
   },

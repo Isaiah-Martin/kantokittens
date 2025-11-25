@@ -18,7 +18,7 @@ interface Activity {
 type Firestore = FirebaseFirestoreTypes.Module;
 
 // Define the brand colors
-const backgroundColor = '#EBC5F1'; // Peach Content Background Color
+const backgroundColor = '#F3A78F'; // Peach Content Background Color
 const textColor = '#FCFBF6'; // Ivory Shade Text
 const buttonColor = '#52392F'; // Royal Brown button
 
@@ -128,7 +128,7 @@ export default function Booking() {
         
         {/* Display User Data */}
         <View style={styles.userInfo}>
-          <Text style={styles.text}>Logged in as:</Text>
+          <Text style={styles.emailText}>Logged in as:</Text>
           <Text style={styles.emailText}>{user ? user.email : 'Guest'}</Text>
         </View>
 
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: textColor, // White text
+    color: '#4A3728', // White text
   },
   logo: {
     width: screenWidth * 0.3, // Made the logo larger (30% of screen width)
@@ -185,18 +185,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 10,
     // Adjusted border color to be visible on the new background
-    borderColor: textColor, 
+    borderColor: '#4A3728', 
     borderWidth: 1,
     borderRadius: 5,
   },
   text: {
     fontSize: 16,
-    color: textColor, // White text
+    color: textColor,
   },
   emailText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: textColor, // White text
+    color: '#4A3728', 
   },
   bookingStatusArea: {
     flex: 1,
@@ -208,11 +208,11 @@ const styles = StyleSheet.create({
   },
   noBookingsText: {
     fontSize: 18,
-    color: textColor, // White text
+    color: '#4A3728',
     marginBottom: 15,
   },
   button: {
-    backgroundColor: buttonColor, // Black button background
+    backgroundColor: buttonColor,
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,

@@ -1,6 +1,7 @@
 // app/(app)/(tabs)/hometab/bookingadd.tsx
 // Using @react-native-picker/picker alternative
 
+import { Picker } from '@react-native-picker/picker';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,9 +12,6 @@ import {
   Text,
   View
 } from 'react-native';
-// Import the native picker component
-import { Picker } from '@react-native-picker/picker';
-// Import SafeAreaView from 'react-native-safe-area-context' as recommended by your console logs
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -33,15 +31,16 @@ const mockActivities: ActivitySchedule[] = [
 ];
 
 const BookingAddScreen = () => {
+  // We initialize the state variables with the *first* available mock data
   const [activities] = useState<ActivitySchedule[]>(mockActivities); 
-  const [selectedActivityName, setSelectedActivityName] = useState<string | undefined>(undefined);
-  const [selectedDay, setSelectedDay] = useState<string | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
+  const [selectedActivityName, setSelectedActivityName] = useState<string | undefined>(mockActivities[0]?.Activity);
+  const [selectedDay, setSelectedDay] = useState<string | undefined>(mockActivities[0]?.DaysOfWeek[0]);
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(mockActivities[0]?.HoursOfDay[0]);
   const [isSubmitting, setIsSubmitting] = useState(false); 
 
+  // Now, selectedActivity will always have a value initially
   const selectedActivity = activities.find(a => a.Activity === selectedActivityName);
-  // Removed placeholderProps as the native picker handles placeholders differently
-  const primaryColor = '#4A3728'; 
+  const primaryColor = '#4A3728'; // A dark brown for consistency
 
   const handleBookingConfirm = async () => {
     if (selectedActivityName && selectedDay && selectedTime) {
@@ -56,10 +55,10 @@ const BookingAddScreen = () => {
           `You are booked for ${selectedActivityName} on ${selectedDay} at ${selectedTime}.`,
         );
 
-        // Reset the form upon success
-        setSelectedActivityName(undefined);
-        setSelectedDay(undefined);
-        setSelectedTime(undefined);
+        // We can choose not to reset the form here if we want to immediately book another time for the same choices
+        // setSelectedActivityName(undefined);
+        // setSelectedDay(undefined);
+        // setSelectedTime(undefined);
 
       } catch (error) {
         Alert.alert("Error", "There was an issue processing your booking. Please try again.");
@@ -67,13 +66,13 @@ const BookingAddScreen = () => {
         setIsSubmitting(false);
       }
     } else {
+      // This alert should ideally never show up now that states are initialized
       Alert.alert("Missing Information", "Please select an activity, day, and time.");
     }
   };
 
 
   if (isSubmitting) {
-    // Use a dedicated loading container style with centering
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={primaryColor} />
@@ -83,69 +82,66 @@ const BookingAddScreen = () => {
   }
 
   return (
-    // Use the correct SafeAreaView from 'react-native-safe-area-context'
     <SafeAreaView style={styles.safeArea}>
-      {/* Use ScrollView to ensure content is interactive and scrollable if needed */}
       <ScrollView contentContainerStyle={styles.scrollContentContainer}>
         <Text style={styles.title}>Schedule a Booking</Text>
 
-        {/* Activity Picker using Native Picker */}
+        {/* Activity Picker - Always visible */}
         <Text style={styles.label}>Choose Activity:</Text>
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={selectedActivityName}
-            onValueChange={(itemValue: string | undefined) => { // Type explicitly for the picker
+            onValueChange={(itemValue: string | undefined) => {
+              // When activity changes, we reset dependent selections to the first available options
               setSelectedActivityName(itemValue);
-              setSelectedDay(undefined);
-              setSelectedTime(undefined);
+              const newActivity = activities.find(a => a.Activity === itemValue);
+              setSelectedDay(newActivity?.DaysOfWeek[0] || undefined);
+              setSelectedTime(newActivity?.HoursOfDay[0] || undefined);
             }}
           >
-            {/* Added a disabled placeholder item at the top */}
-            <Picker.Item label="Select an option..." value={undefined} color="#4A3728" />
             {activities.map((activity) => (
-              <Picker.Item key={activity.Activity} label={activity.Activity} value={activity.Activity} />
+              <Picker.Item key={activity.Activity} label={activity.Activity} value={activity.Activity} color={"#4A3728"}/>
             ))}
           </Picker>
         </View>
 
-        {/* Day Picker (conditionally rendered) */}
-        {selectedActivityName && (
-          <>
+        {/* Horizontal layout for Day and Time Pickers */}
+        <View style={styles.horizontalPickerRow}>
+          
+          {/* Day Picker - Always visible (if activity is selected, which it is by default) */}
+          <View style={styles.pickerColumn}>
             <Text style={styles.label}>Choose Day:</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedDay}
                 onValueChange={(itemValue: string | undefined) => {
                   setSelectedDay(itemValue);
-                  setSelectedTime(undefined);
                 }}
               >
-                <Picker.Item label="Select an option..." value={undefined} color="#4A3728" />
+                {/* Use the currently selected activity's days */}
                 {selectedActivity?.DaysOfWeek.map((day) => (
-                  <Picker.Item key={day} label={day} value={day} />
-                ))}
+                  <Picker.Item key={day} label={day} value={day} color={"#4A3728"}/>
+                )) || []}
               </Picker>
             </View>
-          </>
-        )}
-
-        {/* Time Picker (conditionally rendered) */}
-        {selectedDay && selectedActivityName && (
-          <>
+          </View>
+          
+          {/* Time Picker - Always visible (if activity is selected) */}
+          <View style={styles.pickerColumn}>
             <Text style={styles.label}>Choose Time:</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={selectedTime}
                 onValueChange={(itemValue: string | undefined) => setSelectedTime(itemValue)}
               >
-                 <Picker.Item label="Select an option..." value={undefined} color="#4A3728" />
+                {/* Use the currently selected activity's hours */}
                 {selectedActivity?.HoursOfDay.map((time) => (
-                  <Picker.Item key={time} label={time} value={time} />
-                ))}
+                  <Picker.Item key={time} label={time} value={time} color={"#4A3728"}/>
+                )) || []}
               </Picker>
             </View>
-          </>
-        )}
+          </View>
+        </View>
 
         <View style={styles.buttonContainer}>
           <Button
@@ -160,23 +156,19 @@ const BookingAddScreen = () => {
   );
 };
 
-// Styles are adjusted for the native Picker, which doesn't need inputIOS/Android styles
 const styles = StyleSheet.create({
-  // Use a simple safe area container
   safeArea: {
     flex: 1,
-    backgroundColor: '#FCFBF6',
+    backgroundColor: '#FCFBF6', // Using the off-white background color
   },
-  // Use a scrollable content container for layout
   scrollContentContainer: {
-    flexGrow: 1, // Allows the content to expand and fill the safe area space
+    flexGrow: 1, 
     padding: 20,
   },
-  // Dedicated style for the full-screen loading indicator
   loadingContainer: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#EBC5F1',
+    backgroundColor: '#FCFBF6',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -185,27 +177,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 30,
     textAlign: 'center',
-    marginTop: 10, // Adjust positioning within the new layout
+    marginTop: 10, 
+    color: '#4A3728', // Dark text color
   },
   label: {
     fontSize: 16,
     marginBottom: 5,
+    // marginTop removed from label here as it's handled by padding/margins of containers
+    color: '#4A3728',
+    fontWeight: '500',
+  },
+  // New style to wrap the two bottom pickers horizontally
+  horizontalPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 15,
-    color: '#333',
+  },
+  // New style for individual columns in the horizontal row
+  pickerColumn: {
+    flex: 1, // Ensures even distribution of space
+    marginHorizontal: 5, // Adds a little spacing between the columns
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#4A3728',
+    borderColor: '#4A3728', // Darker border
     borderRadius: 8,
-    marginBottom: 20,
-    // The native picker handles its own zIndex internally much better
-    // overflow: 'hidden', // Can sometimes cause issues with the picker dropdown modal
-    backgroundColor: '#EBC5F1',
-    justifyContent: 'center', // Helps vertically align the picker content
+    // marginBottom removed here because it's inside the horizontal row
+    backgroundColor: '#FFFFFF', // White background for pickers
+    justifyContent: 'center',
+    overflow: 'hidden',
+    height: 60, // Standardize height for horizontal alignment
   },
   buttonContainer: {
-    marginTop: 20,
-    // zIndex is not needed here anymore as the native picker works differently
+    marginTop: 30, // Add more margin above the button now that pickers are horizontal
   },
 });
 

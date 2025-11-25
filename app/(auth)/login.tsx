@@ -71,11 +71,11 @@ export default function Login() {
     
     console.log("Rendering Login screen."); 
 
-    const contentBgColor = '#EBC5F1';
+    const contentBgColor = '#F3A78F';
 
     return (
         <ParallaxScrollView
-            headerBackgroundColor={{ light: '#EBC5F1', dark: '#000000' }}
+            headerBackgroundColor={{ light: '#F3A78F', dark: '#000000' }}
             headerImage={
                 <View style={styles.imageContainer}>
                     <Image source={require('@/assets/images/KantoKittensCover.png')} style={styles.reactLogo} resizeMode="contain" />
