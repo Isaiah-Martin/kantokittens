@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 // CHANGE 1: Import from the new RTDB file
 import { getUser } from '../lib/rtdb';
 import { AuthContextType, User } from '../navigation/types';
-import { FirebaseContext } from './FirebaseContext';
+import { FirebaseContext } from './FirebaseContext'; // This is where the issue likely originates
 
 // Use a generic 'any' type bridge to prevent TypeScript errors across platforms
 // We expect a Database instance from the FirebaseContext now
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const login = useCallback(async (email: string, password: string) => {
-    // CHANGE 6: Check for 'database' instead of 'firestore'
+    // 👇 The code fails HERE because 'auth' or 'database' are undefined/null
     if (!auth || !database) {
       throw new Error('Firebase services not available during login.');
     }
