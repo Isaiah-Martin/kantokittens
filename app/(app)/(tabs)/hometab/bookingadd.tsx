@@ -1,10 +1,10 @@
 // app/(app)/(tabs)/hometab/bookingadd.tsx
 
-import React, { useState } from 'react'; // Removed useEffect as it's no longer necessary
-import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 
-// Define the type for an activity item
+// --- Types ---
 interface ActivitySchedule {
   Activity: string;
   DaysOfWeek: string[];
@@ -20,54 +20,70 @@ const mockActivities: ActivitySchedule[] = [
 ];
 
 const BookingAddScreen = () => {
-  const [activities] = useState<ActivitySchedule[]>(mockActivities); // 'setActivities' not used after initialization, can be removed
+  const [activities] = useState<ActivitySchedule[]>(mockActivities); 
   const [selectedActivityName, setSelectedActivityName] = useState<string | undefined>(undefined);
   const [selectedDay, setSelectedDay] = useState<string | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(false); 
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
-  // Find the currently selected activity object based on the name
   const selectedActivity = activities.find(a => a.Activity === selectedActivityName);
+  const placeholderProps = { label: "Select an option...", value: undefined, color: '#9E9E9E' };
+  const primaryColor = '#EBC5F1'; 
 
-  // The useEffect hook has been removed entirely as it conflicts with interactive UI flow.
-
-  const handleBookingConfirm = () => {
+  const handleBookingConfirm = async () => {
     if (selectedActivityName && selectedDay && selectedTime) {
-      Alert.alert(
-        "Booking Confirmed",
-        `You are booked for ${selectedActivityName} on ${selectedDay} at ${selectedTime}.`,
-      );
-      // In a real app, you would send this booking data to Firebase/backend here
+      setIsSubmitting(true);
+      
+      try {
+        // Simulate an API call with a delay
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
+
+        Alert.alert(
+          "Booking Confirmed",
+          `You are booked for ${selectedActivityName} on ${selectedDay} at ${selectedTime}.`,
+        );
+
+        setSelectedActivityName(undefined);
+        setSelectedDay(undefined);
+        setSelectedTime(undefined);
+
+      } catch (error) {
+        Alert.alert("Error", "There was an issue processing your booking. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       Alert.alert("Missing Information", "Please select an activity, day, and time.");
     }
   };
 
-  if (loading) {
-    // Note: 'primaryColor' is used here but defined after the component.
-    // It's technically okay due to hoisting but typically defined before the component function.
+  if (isSubmitting) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={primaryColor} />
-        <Text>Loading activities...</Text>
+        <Text>Confirming your booking...</Text>
       </View>
     );
   }
 
-  // Define a standard placeholder object to use for all pickers
-  const placeholderProps = { label: "Select an option...", value: undefined };
+  // Calculate zIndex for pickers. The highest zIndex should be on the bottom picker to ensure it opens on top of others on Android.
+  // We'll set the initial picker zIndex lower than subsequent ones.
+  const activityPickerZIndex = 10;
+  const dayPickerZIndex = 20;
+  const timePickerZIndex = 30;
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Schedule a Booking</Text>
 
-      {/* Activity Picker */}
+      {/* Activity Picker Container with zIndex */}
+      {/* Note: zIndex in RN works differently than web; the last element rendered on top generally wins, 
+          but explicitly setting zIndex is often needed for components like RNPickerSelect on Android to control overlay order. */}
       <Text style={styles.label}>Choose Activity:</Text>
-      <View style={styles.pickerContainer}>
+      <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: activityPickerZIndex }]}>
         <RNPickerSelect
           onValueChange={(itemValue) => {
             setSelectedActivityName(itemValue);
-            // Reset dependent selections when activity changes
             setSelectedDay(undefined);
             setSelectedTime(undefined);
           }}
@@ -77,60 +93,80 @@ const BookingAddScreen = () => {
             value: activity.Activity,
           }))}
           placeholder={placeholderProps}
+          style={pickerSelectStyles}
         />
       </View>
 
-      {/* Day Picker (conditionally rendered only if an Activity is chosen) */}
-      {/* Use optional chaining (?) for robustness when mapping DaysOfWeek */}
+      {/* Day Picker (conditionally rendered) */}
       {selectedActivityName && (
         <>
           <Text style={styles.label}>Choose Day:</Text>
-          <View style={styles.pickerContainer}>
+          <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: dayPickerZIndex }]}>
             <RNPickerSelect
               onValueChange={(itemValue) => {
                 setSelectedDay(itemValue);
-                // Reset dependent selections when day changes
                 setSelectedTime(undefined);
               }}
               value={selectedDay}
               items={selectedActivity?.DaysOfWeek.map((day) => ({
                 label: day,
                 value: day,
-              })) || []} // Provide empty array fallback
+              })) || []} 
               placeholder={placeholderProps}
+              style={pickerSelectStyles}
             />
           </View>
         </>
       )}
 
-      {/* Time Picker (conditionally rendered only if a Day is chosen) */}
+      {/* Time Picker (conditionally rendered) */}
       {selectedDay && selectedActivityName && (
         <>
           <Text style={styles.label}>Choose Time:</Text>
-          <View style={styles.pickerContainer}>
+          <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: timePickerZIndex }]}>
             <RNPickerSelect
               onValueChange={(itemValue) => setSelectedTime(itemValue)}
               value={selectedTime}
               items={selectedActivity?.HoursOfDay.map((time) => ({
                 label: time,
                 value: time,
-              })) || []} // Provide empty array fallback
+              })) || []} 
               placeholder={placeholderProps}
+              style={pickerSelectStyles}
             />
           </View>
         </>
       )}
 
-      <Button
-        title="Confirm Booking"
-        onPress={handleBookingConfirm}
-        disabled={!selectedActivityName || !selectedDay || !selectedTime}
-      />
+      {/* Button container needs to ensure it's not obscured by a high z-index Android picker overlay if one is open */}
+      <View style={styles.buttonContainer}>
+        <Button
+          title={isSubmitting ? "Submitting..." : "Confirm Booking"}
+          onPress={handleBookingConfirm}
+          disabled={isSubmitting || !selectedActivityName || !selectedDay || !selectedTime}
+          color={primaryColor}
+        />
+      </View>
     </View>
   );
 };
 
-const primaryColor = '#EBC5F1';
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    color: 'black',
+    paddingRight: 30, 
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: 'black',
+    paddingRight: 30, 
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -138,6 +174,8 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
     justifyContent: 'center',
+    // Position must be non-static (e.g., 'relative') for zIndex to work correctly on iOS
+    position: 'relative', 
   },
   title: {
     fontSize: 24,
@@ -149,6 +187,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     marginTop: 15,
+    color: '#333',
   },
   pickerContainer: {
     borderWidth: 1,
@@ -156,7 +195,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
     overflow: 'hidden',
-    paddingHorizontal: 10, 
+    backgroundColor: '#fafafa', // Added background color for better layering appearance
+  },
+  buttonContainer: {
+    marginTop: 20,
+    // Ensure button container is above other elements in the stack flow if needed
+    zIndex: 0, 
   },
 });
 
