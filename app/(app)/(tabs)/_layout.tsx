@@ -1,35 +1,33 @@
+//app/(app)/(tabs)/_layout.tsx
+
 import { Tabs } from 'expo-router';
 import React from 'react';
 // FIX: Explicitly import Text from react-native
 import { Text } from 'react-native';
 // Import your specific components or constants if needed
-// import { HapticTab } from '@/components/haptic-tab';
-// import { IconSymbol } from '@/components/ui/icon-symbol';
 
-// Define the brand color
-const primaryColor = '#D98CBF';
+// Define the brand colors
+const primaryColor = '#EBC5F1'; // Updated background color
 const inactiveBg = '#f0f0f0';
-const activeTint = '#ffffff'; // White text/icon for contrast
+const activeTint = '#000000'; // Black text/icon for contrast
 
 export default function TabLayout() {
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: activeTint, // Icons/text when active
+        tabBarActiveTintColor: activeTint, // Icons/text when active (Black for contrast)
         tabBarInactiveTintColor: '#888', // Icons/text when inactive
-        headerShown: false,
-        // If you are having issues with HapticTab or IconSymbol imports, 
-        // you might need to temporarily comment them out until paths are correct.
-        // tabBarButton: HapticTab, 
+        headerShown: false, // Hides headers globally for the tab navigator
       }}>
       <Tabs.Screen
         name="hometab" 
         options={{
+          headerShown: false, // Explicitly ensure the header is hidden for the home tab stack
           title: 'Home',
           tabBarActiveBackgroundColor: primaryColor,
           tabBarInactiveBackgroundColor: inactiveBg,
-          tabBarIcon: ({ color }) => <Text>🏠</Text>, 
+          tabBarIcon: ({ color }) => <Text style={{ color }}>🏠</Text>, 
         }}
       />
       <Tabs.Screen
@@ -37,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'Bookings',
           tabBarActiveBackgroundColor: primaryColor,
-          tabBarIcon: ({ color }) => <Text>📅</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color }}>📅</Text>,
         }}
       />
       <Tabs.Screen
@@ -46,7 +44,7 @@ export default function TabLayout() {
           title: 'Explore',
           tabBarActiveBackgroundColor: primaryColor,
           tabBarInactiveBackgroundColor: inactiveBg,
-          tabBarIcon: ({ color }) => <Text>🗺️</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color }}>🗺️</Text>,
         }}
       />
       {/* If you have a settings page at app/(app)/(tabs)/settings.tsx */}
@@ -55,7 +53,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarActiveBackgroundColor: primaryColor,
-          tabBarIcon: ({ color }) => <Text>⚙️</Text>,
+          tabBarIcon: ({ color }) => <Text style={{ color }}>⚙️</Text>,
         }}
       />
     </Tabs>

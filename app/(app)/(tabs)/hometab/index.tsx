@@ -1,30 +1,49 @@
+//app/(app)/(tabs)/hometab/index.tsx
 import { AuthContext } from '@context/AuthContext';
 import { useRouter } from 'expo-router';
 import { useContext } from 'react';
-import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// Define the brand color
-const primaryColor = '#D98CBF';
-const textColor = '#FFFFFF'; // Changed to white
-const secondaryColor = '#000000'; // Changed to black
+// Define the brand colors
+const backgroundColor = '#EBC5F1'; // A light purple color matching the image background
+const textColor = '#CC3399'; // (used for general text)
+const buttonColor = '#000000'; // Black button
 
 // Assuming your image is in the assets/images folder
-const logoImage = require('../../../assets/images/KantoKittens.png');
+const logoImage = require('../../../../assets/images/KantoKittens.png');
+
+// Get screen width for responsive sizing
+const screenWidth = Dimensions.get('window').width;
 
 export default function HomePage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  
+  // Explicitly cast the result of useContext to 'any' to resolve TypeScript errors
+  const { user, logOut } = useContext(AuthContext) as any; 
 
   const handleBookingPress = () => {
-    // FIX: Use the correct public path for your deeply nested booking.tsx file
+    // Use the correct public path for your deeply nested booking.tsx file
     router.push({ pathname: '/hometab/booking', params: { date: '2025-10-26' } });
+  };
+
+  const handleLogoutPress = async () => {
+    if (logOut) {
+      try {
+        await logOut();
+        console.log("User logged out successfully.");
+      } catch (error) {
+        console.error("Logout failed:", error);
+        Alert.alert("Logout Failed", "Could not log out at this time.");
+      }
+    } else {
+      console.warn("Logout function is not available in AuthContext.");
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header View for Title and Logo */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Kanto Kittens</Text>
         {/* Image in the top right corner */}
         <Image source={logoImage} style={styles.logo} resizeMode="contain" />
       </View>
@@ -35,13 +54,15 @@ export default function HomePage() {
         ) : (
           <Text style={styles.instructionText}>Select the button below to return to booking</Text>
         )}
-        {/* Using TouchableOpacity for a custom styled button */}
+        
+        {/* Go to Booking Button */}
         <TouchableOpacity style={styles.button} onPress={handleBookingPress}>
           <Text style={styles.buttonText}>Go to Booking</Text>
         </TouchableOpacity>
-        {/* Added placeholder for a second button/navigation item for demonstration */}
-        <TouchableOpacity style={styles.buttonSecondary} onPress={() => console.log('Site map DNE clicked')}>
-          <Text style={styles.buttonTextSecondary}>Sitemap (Page DNE)</Text>
+        
+        {/* Logout Button (Now styled as the main button) */}
+        <TouchableOpacity style={[styles.button, { marginTop: 20 }]} onPress={handleLogoutPress}>
+          <Text style={styles.buttonText}>Logout</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -51,23 +72,19 @@ export default function HomePage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: primaryColor, // Changed background color
+    backgroundColor: backgroundColor, // Updated background color
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end', // Aligns logo to the right
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: textColor, // White text
+    width: '100%',
   },
   logo: {
-    width: 50, // Adjust size as needed
-    height: 50, // Adjust size as needed
+    width: screenWidth * 0.37, // Size for presence
+    height: screenWidth * 0.45, 
   },
   contentArea: {
     flex: 1,
@@ -78,18 +95,18 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: textColor, // White text
+    color: textColor,
     marginBottom: 10,
     textAlign: 'center',
   },
   instructionText: {
     fontSize: 16,
-    color: textColor, // White text
+    color: textColor,
     marginBottom: 20,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: secondaryColor, // Black button
+    backgroundColor: buttonColor, // Black button
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
@@ -97,26 +114,14 @@ const styles = StyleSheet.create({
     width: '80%',
     alignItems: 'center',
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2, },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
   buttonText: {
-    color: textColor, // White text
+    color: textColor, // Text color on the black button
     fontSize: 18,
     fontWeight: '600',
   },
-  buttonSecondary: {
-    marginTop: 20,
-    padding: 10,
-  },
-  buttonTextSecondary: {
-    color: textColor, // White text
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  }
 });
