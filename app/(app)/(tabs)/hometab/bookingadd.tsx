@@ -1,8 +1,19 @@
 // app/(app)/(tabs)/hometab/bookingadd.tsx
 
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Button, Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Button,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
+// Import SafeAreaView from 'react-native-safe-area-context' as recommended by your console logs
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Types ---
 interface ActivitySchedule {
@@ -43,6 +54,7 @@ const BookingAddScreen = () => {
           `You are booked for ${selectedActivityName} on ${selectedDay} at ${selectedTime}.`,
         );
 
+        // Reset the form upon success
         setSelectedActivityName(undefined);
         setSelectedDay(undefined);
         setSelectedTime(undefined);
@@ -57,97 +69,94 @@ const BookingAddScreen = () => {
     }
   };
 
+  const activityPickerZIndex = 10;
+  const dayPickerZIndex = 20;
+  const timePickerZIndex = 30;
+
   if (isSubmitting) {
+    // Use a dedicated loading container style with centering
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={primaryColor} />
         <Text>Confirming your booking...</Text>
       </View>
     );
   }
 
-  // Calculate zIndex for pickers. The highest zIndex should be on the bottom picker to ensure it opens on top of others on Android.
-  // We'll set the initial picker zIndex lower than subsequent ones.
-  const activityPickerZIndex = 10;
-  const dayPickerZIndex = 20;
-  const timePickerZIndex = 30;
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Schedule a Booking</Text>
+    // Use the correct SafeAreaView from 'react-native-safe-area-context'
+    <SafeAreaView style={styles.safeArea}>
+      {/* Use ScrollView to ensure content is interactive and scrollable if needed */}
+      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
+        <Text style={styles.title}>Schedule a Booking</Text>
 
-      {/* Activity Picker Container with zIndex */}
-      {/* Note: zIndex in RN works differently than web; the last element rendered on top generally wins, 
-          but explicitly setting zIndex is often needed for components like RNPickerSelect on Android to control overlay order. */}
-      <Text style={styles.label}>Choose Activity:</Text>
-      <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: activityPickerZIndex }]}>
-        <RNPickerSelect
-          onValueChange={(itemValue) => {
-            setSelectedActivityName(itemValue);
-            setSelectedDay(undefined);
-            setSelectedTime(undefined);
-          }}
-          value={selectedActivityName} 
-          items={activities.map((activity) => ({
-            label: activity.Activity,
-            value: activity.Activity,
-          }))}
-          placeholder={placeholderProps}
-          style={pickerSelectStyles}
-        />
-      </View>
+        <Text style={styles.label}>Choose Activity:</Text>
+        <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: activityPickerZIndex }]}>
+          <RNPickerSelect
+            onValueChange={(itemValue) => {
+              setSelectedActivityName(itemValue);
+              setSelectedDay(undefined);
+              setSelectedTime(undefined);
+            }}
+            value={selectedActivityName} 
+            items={activities.map((activity) => ({
+              label: activity.Activity,
+              value: activity.Activity,
+            }))}
+            placeholder={placeholderProps}
+            style={pickerSelectStyles}
+          />
+        </View>
 
-      {/* Day Picker (conditionally rendered) */}
-      {selectedActivityName && (
-        <>
-          <Text style={styles.label}>Choose Day:</Text>
-          <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: dayPickerZIndex }]}>
-            <RNPickerSelect
-              onValueChange={(itemValue) => {
-                setSelectedDay(itemValue);
-                setSelectedTime(undefined);
-              }}
-              value={selectedDay}
-              items={selectedActivity?.DaysOfWeek.map((day) => ({
-                label: day,
-                value: day,
-              })) || []} 
-              placeholder={placeholderProps}
-              style={pickerSelectStyles}
-            />
-          </View>
-        </>
-      )}
+        {selectedActivityName && (
+          <>
+            <Text style={styles.label}>Choose Day:</Text>
+            <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: dayPickerZIndex }]}>
+              <RNPickerSelect
+                onValueChange={(itemValue) => {
+                  setSelectedDay(itemValue);
+                  setSelectedTime(undefined);
+                }}
+                value={selectedDay}
+                items={selectedActivity?.DaysOfWeek.map((day) => ({
+                  label: day,
+                  value: day,
+                })) || []} 
+                placeholder={placeholderProps}
+                style={pickerSelectStyles}
+              />
+            </View>
+          </>
+        )}
 
-      {/* Time Picker (conditionally rendered) */}
-      {selectedDay && selectedActivityName && (
-        <>
-          <Text style={styles.label}>Choose Time:</Text>
-          <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: timePickerZIndex }]}>
-            <RNPickerSelect
-              onValueChange={(itemValue) => setSelectedTime(itemValue)}
-              value={selectedTime}
-              items={selectedActivity?.HoursOfDay.map((time) => ({
-                label: time,
-                value: time,
-              })) || []} 
-              placeholder={placeholderProps}
-              style={pickerSelectStyles}
-            />
-          </View>
-        </>
-      )}
+        {selectedDay && selectedActivityName && (
+          <>
+            <Text style={styles.label}>Choose Time:</Text>
+            <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: timePickerZIndex }]}>
+              <RNPickerSelect
+                onValueChange={(itemValue) => setSelectedTime(itemValue)}
+                value={selectedTime}
+                items={selectedActivity?.HoursOfDay.map((time) => ({
+                  label: time,
+                  value: time,
+                })) || []} 
+                placeholder={placeholderProps}
+                style={pickerSelectStyles}
+              />
+            </View>
+          </>
+        )}
 
-      {/* Button container needs to ensure it's not obscured by a high z-index Android picker overlay if one is open */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title={isSubmitting ? "Submitting..." : "Confirm Booking"}
-          onPress={handleBookingConfirm}
-          disabled={isSubmitting || !selectedActivityName || !selectedDay || !selectedTime}
-          color={primaryColor}
-        />
-      </View>
-    </View>
+        <View style={styles.buttonContainer}>
+          <Button
+            title={isSubmitting ? "Submitting..." : "Confirm Booking"}
+            onPress={handleBookingConfirm}
+            disabled={isSubmitting || !selectedActivityName || !selectedDay || !selectedTime}
+            color={primaryColor}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -169,19 +178,30 @@ const pickerSelectStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: {
+  // Use a simple safe area container
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  // Use a scrollable content container for layout
+  scrollContentContainer: {
+    flexGrow: 1, // Allows the content to expand and fill the safe area space
+    padding: 20,
+  },
+  // Dedicated style for the full-screen loading indicator
+  loadingContainer: {
     flex: 1,
     padding: 20,
     backgroundColor: '#fff',
     justifyContent: 'center',
-    // Position must be non-static (e.g., 'relative') for zIndex to work correctly on iOS
-    position: 'relative', 
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 30,
     textAlign: 'center',
+    marginTop: 10, // Adjust positioning within the new layout
   },
   label: {
     fontSize: 16,
@@ -195,12 +215,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
     overflow: 'hidden',
-    backgroundColor: '#fafafa', // Added background color for better layering appearance
+    backgroundColor: '#fafafa',
   },
   buttonContainer: {
     marginTop: 20,
-    // Ensure button container is above other elements in the stack flow if needed
-    zIndex: 0, 
+    zIndex: 0, // Keep zIndex low to not interfere with pickers
   },
 });
 
