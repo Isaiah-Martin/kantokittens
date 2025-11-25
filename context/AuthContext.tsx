@@ -1,44 +1,14 @@
-// context/AuthContext.tsx (Revised for Realtime Database)
+// context/AuthContext.tsx 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
-// CHANGE 1: Import from the new RTDB file
-import { getUser } from '../lib/rtdb';
+// REMOVED: import { getUser } from '../lib/rtdb'; 
 import { AuthContextType, User } from '../navigation/types';
 import { FirebaseContext } from './FirebaseContext';
 
-// Use a generic 'any' type bridge to prevent TypeScript errors across platforms
-// We expect a Database instance from the FirebaseContext now
-type DatabaseService = any;
-
-
-const fetchUserWithRetry = async (
-  // CHANGE 2: Accept a Database instance
-  database: DatabaseService, 
-  uid: string
-): Promise<User | null> => {
-  let userData: User | null = null;
-  let retries = 5;
-  while (retries > 0) {
-    try {
-      // CHANGE 3: Pass the database instance to getUser
-      userData = await getUser(database, uid); 
-      return userData;
-    } catch (error: any) {
-      // CHANGE 4: Realtime DB errors don't use the 'firestore/unavailable' code
-      // We check for general 'unavailable' or similar network issues
-      if (error.message.includes('unavailable') && retries > 1) {
-        console.warn(`Database unavailable, retrying... (${retries - 1} left)`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (6 - retries)));
-        retries--;
-      } else {
-        throw error;
-      }
-    }
-  }
-  return null;
-};
+// REMOVED: type DatabaseService = any;
+// REMOVED: fetchUserWithRetry function
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -49,18 +19,18 @@ export const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // CHANGE 5: Expect 'database' from FirebaseContext instead of 'firestore'
-  const { auth, database, isReady: firebaseIsReady } = useContext(FirebaseContext);
+  // We no longer require 'database' in the dependency list for core auth flow
+  const { auth, isReady: firebaseIsReady } = useContext(FirebaseContext);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const login = useCallback(async (email: string, password: string) => {
-    if (!auth || !database) {
-      throw new Error('Firebase services not available during login.');
+    // Only check for the auth service now
+    if (!auth) {
+      throw new Error('Firebase Auth service not available during login.');
     }
     setLoading(true); 
     try {
-      // Auth logic remains the same (Firebase Auth is separate from DB)
       if (typeof (auth as any).signInWithEmailAndPassword === 'function') {
         await (auth as any).signInWithEmailAndPassword(email, password);
       } else {
@@ -73,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false); 
       throw error; 
     }
-  }, [auth, database]); // CHANGE 7: Update dependency array
+  }, [auth]); // Dependency array updated
 
   const logout = useCallback(async () => {
     if (!auth) {
@@ -95,10 +65,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // CHANGE 8: Check for 'database' instance
-    if (!auth || !database) {
+    // Only check for the auth instance now
+    if (!auth) {
       setLoading(false);
-      console.error('Firebase services not available after being marked ready.');
+      console.error('Firebase Auth service not available after being marked ready.');
       return;
     }
 
@@ -108,11 +78,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const handleAuthStateChange = async (firebaseUser: any | null) => {
       try {
         if (!isMounted) return;
+        
         if (firebaseUser) {
-          // CHANGE 9: Pass the database instance to fetchUserWithRetry
-          const userData = await fetchUserWithRetry(database, firebaseUser.uid); 
-          if (isMounted) setUser(userData || null);
+          // User is authenticated. We can create a basic User object 
+          // without trying to fetch data from the non-existent RTDB.
+          const basicUser: User = { 
+              uid: firebaseUser.uid, 
+              email: firebaseUser.email,
+              // Add other necessary properties from firebaseUser object here
+           };
+          if (isMounted) setUser(basicUser);
+
         } else {
+          // User is logged out
           await AsyncStorage.removeItem('user');
           if (isMounted) setUser(null);
         }
@@ -122,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } finally {
         if (isMounted) {
             setLoading(false); 
-            console.log("handleAuthStateChange FINISHED. Loading set to false."); // ADDED LOG
+            console.log("handleAuthStateChange FINISHED. Loading set to false."); 
         }
       }
     };
@@ -143,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         subscriber();
       }
     };
-  }, [auth, firebaseIsReady, database]); // CHANGE 10: Update dependency array
+  }, [auth, firebaseIsReady]); // Dependency array updated
 
   const value = useMemo(() => ({ user, loading, login, logout, isLoggedIn: !!user }), [user, loading, login, logout]);
 
