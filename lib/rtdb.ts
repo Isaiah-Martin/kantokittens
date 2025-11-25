@@ -1,30 +1,60 @@
-// lib/rtdb.ts (New file for Realtime Database functions)
+// lib/rtdb.ts
 
-// Import the correct modular functions
-import { child, Database, get, ref } from 'firebase/database';
-
-// Assume 'User' type is defined elsewhere in your navigation/types.ts
+import { Platform } from 'react-native';
 import { User } from '../navigation/types';
 
-// The helper function needs to accept a Realtime Database instance
-export const getUser = async (databaseInstance: Database, uid: string): Promise<User | null> => {
-  try {
-    // Construct the reference to the specific user's node: /users/{uid}
-    const dbRef = ref(databaseInstance);
-    const userRef = child(dbRef, `users/${uid}`);
-    
-    // Get the data once
-    const snapshot = await get(userRef);
+// Define a type for the RTDB service instance for better type safety
+// This covers both Web (Database from 'firebase/database') and Native (Database from '@react-native-firebase/database')
+type DatabaseService = any; 
 
-    if (snapshot.exists()) {
-      // Return the data retrieved from the database node
-      return snapshot.val() as User;
+/**
+ * Retrieves a user's data from the Realtime Database.
+ * @param databaseInstance The initialized RTDB instance (web or native).
+ * @param uid The user's UID.
+ * @returns A promise that resolves to the user data or null.
+ */
+export const getUser = async (databaseInstance: DatabaseService, uid: string): Promise<User | null> => {
+  try {
+    let userData: User | null = null;
+
+    if (Platform.OS === 'web') {
+      // *** WEB PLATFORM LOGIC (Modular SDK) ***
+      // We use dynamic import here so these imports don't run on native
+      const { ref, child, get } = await import('firebase/database');
+
+      // Construct the reference to the specific user's node: /users/{uid}
+      const dbRef = ref(databaseInstance);
+      const userRef = child(dbRef, `users/${uid}`);
+
+      // Get the data once
+      const snapshot = await get(userRef);
+
+      if (snapshot.exists()) {
+        userData = snapshot.val() as User;
+      } else {
+        console.log("No data available for user (web)");
+      }
+
     } else {
-      console.log("No user data available in Realtime DB for UID:", uid);
-      return null;
+      // *** NATIVE PLATFORM LOGIC (@react-native-firebase) ***
+      // The native library uses a different API style and expects a native instance
+      const userRef = databaseInstance.ref(`users/${uid}`);
+      
+      // Use .once() for a single read in the native SDK
+      const snapshot = await userRef.once('value');
+
+      if (snapshot.exists()) {
+        userData = snapshot.val() as User;
+      } else {
+        console.log("No data available for user (native)");
+      }
     }
+
+    return userData;
+
   } catch (error) {
     console.error("Error getting user data from Realtime DB:", error);
-    throw error;
+    // Rethrow the error so AuthContext can handle retries/state updates
+    throw error; 
   }
 };
