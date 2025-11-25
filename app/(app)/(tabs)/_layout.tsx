@@ -1,10 +1,8 @@
-//app/(app)/(tabs)/_layout.tsx
+// app/(app)/(tabs)/_layout.tsx
 
 import { Tabs } from 'expo-router';
 import React from 'react';
-// FIX: Explicitly import Text from react-native
 import { Text } from 'react-native';
-// Import your specific components or constants if needed
 
 // Define the brand colors
 const primaryColor = '#EBC5F1'; // Updated background color
@@ -20,24 +18,24 @@ export default function TabLayout() {
         tabBarInactiveTintColor: '#888', // Icons/text when inactive
         headerShown: false, // Hides headers globally for the tab navigator
       }}>
+      
+      {/* 
+        Maps to the directory: app/(app)/(tabs)/hometab/
+        This entire directory acts as one stack within the tabs UI.
+      */}
       <Tabs.Screen
         name="hometab" 
         options={{
-          headerShown: false, // Explicitly ensure the header is hidden for the home tab stack
           title: 'Home',
           tabBarActiveBackgroundColor: primaryColor,
           tabBarInactiveBackgroundColor: inactiveBg,
           tabBarIcon: ({ color }) => <Text style={{ color }}>🏠</Text>, 
         }}
       />
-      <Tabs.Screen
-        name="hometab/booking"
-        options={{
-          title: 'Bookings',
-          tabBarActiveBackgroundColor: primaryColor,
-          tabBarIcon: ({ color }) => <Text style={{ color }}>📅</Text>,
-        }}
-      />
+
+      {/* 
+        Maps to the file or directory: app/(app)/(tabs)/explore(.tsx)/
+      */}
       <Tabs.Screen
         name="explore"
         options={{
@@ -47,15 +45,15 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Text style={{ color }}>🗺️</Text>,
         }}
       />
-      {/* If you have a settings page at app/(app)/(tabs)/settings.tsx */}
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarActiveBackgroundColor: primaryColor,
-          tabBarIcon: ({ color }) => <Text style={{ color }}>⚙️</Text>,
-        }}
-      />
+      
+      {/* 
+        REMOVED: The route 'hometab/booking' is nested within the 'hometab' stack, 
+        it is not a top-level tab.
+
+        REMOVED: The route 'settings' is defined in app/settings.tsx, which is outside 
+        this (app)/(tabs) group. It cannot be part of this Tab Navigator.
+        It should be accessed via a modal or a separate navigation flow outside of this tab bar structure.
+      */}
     </Tabs>
   );
 }

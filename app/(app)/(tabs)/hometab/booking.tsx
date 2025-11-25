@@ -109,11 +109,11 @@ export default function Booking() {
     }, [user, firestore])
   );
   
-  const handleSchedulePress = () => {
-    console.log("Navigating to scheduling page...");
-    // Update this to the correct navigation path for scheduling
-    // router.push('/schedule'); 
-  };
+ const handleSchedulePress = () => {
+  console.log("Navigating to scheduling page...");
+  // Use the correct path based on your file structure
+  router.push('/hometab/bookingadd'); 
+};
 
   return (
     <SafeAreaView style={styles.container}>

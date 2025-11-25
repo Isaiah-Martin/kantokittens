@@ -1,0 +1,6 @@
+[
+{"Activity": "Yoga", "DaysOfWeek": ["Monday", "Wednesday", "Thursday", "Saturday"], "HoursOfDay": ["09:00", "11:00", "15:00"]},
+{"Activity": "Cat Playtime", "DaysOfWeek":["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], "HoursOfDay":["13:00","14:00", "15:00", "16:00", "5:00", "6:00", "7:00"]},
+{"Activity":"Movie Night", "DaysOfWeek": ["Wednesday", "Friday", "Saturday"], "HoursOfDay": ["19:00"]},
+{ "Activity": "Study Session", "DaysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "HoursOfDay": ["9:00", "10:00", "11:00", "1:00", "2:00"]}
+]

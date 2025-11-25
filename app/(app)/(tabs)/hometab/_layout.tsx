@@ -17,7 +17,7 @@ export default function HomeStackLayout() {
       <Stack.Screen 
         name="booking" 
         options={{ 
-          title: 'Booking Details', // Optional: customize the title for the booking page
+          headerShown: false, // Hides the header for the specific 'booking' screen
         }} 
       />
     </Stack>
