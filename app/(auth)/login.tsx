@@ -71,11 +71,11 @@ export default function Login() {
     
     console.log("Rendering Login screen."); 
 
-    const contentBgColor = '#D98CBF';
+    const contentBgColor = '#EBC5F1';
 
     return (
         <ParallaxScrollView
-            headerBackgroundColor={{ light: '#FFFFFF', dark: '#000000' }}
+            headerBackgroundColor={{ light: '#EBC5F1', dark: '#000000' }}
             headerImage={
                 <View style={styles.imageContainer}>
                     <Image source={require('@/assets/images/KantoKittensCover.png')} style={styles.reactLogo} resizeMode="contain" />
@@ -92,7 +92,7 @@ export default function Login() {
                             <Text 
                                 variant="headlineMedium" 
                                 style={{ 
-                                    color: theme.colors.onSurface, 
+                                    color: '#4A3728', 
                                     fontWeight: 'bold' 
                                 }}
                             >
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
         flex: 1, 
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FFFFFF', 
+        backgroundColor: '#FCFBF6', 
     },
     reactLogo: {
         width: '100%', 
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
         height: 50, 
     },
     dynamicButton: {
-        backgroundColor: 'black', 
+        backgroundColor: '#52392F', 
         height: 50, 
         justifyContent: 'center',
         flexGrow: 1, 

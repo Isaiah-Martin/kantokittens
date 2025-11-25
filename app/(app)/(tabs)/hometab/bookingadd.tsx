@@ -41,7 +41,7 @@ const BookingAddScreen = () => {
 
   const selectedActivity = activities.find(a => a.Activity === selectedActivityName);
   // Removed placeholderProps as the native picker handles placeholders differently
-  const primaryColor = '#EBC5F1'; 
+  const primaryColor = '#4A3728'; 
 
   const handleBookingConfirm = async () => {
     if (selectedActivityName && selectedDay && selectedTime) {
@@ -101,7 +101,7 @@ const BookingAddScreen = () => {
             }}
           >
             {/* Added a disabled placeholder item at the top */}
-            <Picker.Item label="Select an option..." value={undefined} color="#9E9E9E" />
+            <Picker.Item label="Select an option..." value={undefined} color="#4A3728" />
             {activities.map((activity) => (
               <Picker.Item key={activity.Activity} label={activity.Activity} value={activity.Activity} />
             ))}
@@ -120,7 +120,7 @@ const BookingAddScreen = () => {
                   setSelectedTime(undefined);
                 }}
               >
-                <Picker.Item label="Select an option..." value={undefined} color="#9E9E9E" />
+                <Picker.Item label="Select an option..." value={undefined} color="#4A3728" />
                 {selectedActivity?.DaysOfWeek.map((day) => (
                   <Picker.Item key={day} label={day} value={day} />
                 ))}
@@ -138,7 +138,7 @@ const BookingAddScreen = () => {
                 selectedValue={selectedTime}
                 onValueChange={(itemValue: string | undefined) => setSelectedTime(itemValue)}
               >
-                 <Picker.Item label="Select an option..." value={undefined} color="#9E9E9E" />
+                 <Picker.Item label="Select an option..." value={undefined} color="#4A3728" />
                 {selectedActivity?.HoursOfDay.map((time) => (
                   <Picker.Item key={time} label={time} value={time} />
                 ))}
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   // Use a simple safe area container
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FCFBF6',
   },
   // Use a scrollable content container for layout
   scrollContentContainer: {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#EBC5F1',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -195,12 +195,12 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#4A3728',
     borderRadius: 8,
     marginBottom: 20,
     // The native picker handles its own zIndex internally much better
     // overflow: 'hidden', // Can sometimes cause issues with the picker dropdown modal
-    backgroundColor: '#fafafa',
+    backgroundColor: '#EBC5F1',
     justifyContent: 'center', // Helps vertically align the picker content
   },
   buttonContainer: {

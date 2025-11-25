@@ -5,9 +5,9 @@ import { useContext } from 'react';
 import { Alert, Dimensions, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Define the brand colors
-const backgroundColor = '#EBC5F1'; // A light purple color matching the image background
-const textColor = '#CC3399'; // (used for general text)
-const buttonColor = '#000000'; // Black button
+const backgroundColor = '#EBC5F1'; // Peach Content Background Color
+const textColor = '#FCFBF6'; // Ivory Shade Text
+const buttonColor = '#52392F'; // Royal Brown button
 
 // Assuming your image is in the assets/images folder
 const logoImage = require('../../../../assets/images/KantoKittens.png');
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: '80%',
     alignItems: 'center',
-    shadowColor: "#000",
+    shadowColor: "#FCFBF6",
     shadowOffset: { width: 0, height: 2, },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,

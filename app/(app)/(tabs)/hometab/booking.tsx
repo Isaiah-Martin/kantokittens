@@ -18,9 +18,9 @@ interface Activity {
 type Firestore = FirebaseFirestoreTypes.Module;
 
 // Define the brand colors
-const backgroundColor = '#EBC5F1'; // A light purple color matching the image background
-const textColor = '#CC3399'; // Kitten text
-const buttonColor = '#000000'; // Black button
+const backgroundColor = '#EBC5F1'; // Peach Content Background Color
+const textColor = '#FCFBF6'; // Ivory Shade Text
+const buttonColor = '#52392F'; // Royal Brown button
 
 // Assuming your image is in the assets/images folder
 const logoImage = require('../../../../assets/images/KantoKittens.png');
