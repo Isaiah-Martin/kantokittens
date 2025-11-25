@@ -1,4 +1,4 @@
-// screens/(auth)/signup.tsx
+// app/(auth)/signUp.tsx
 
 import validator from 'email-validator';
 import { Href, useRouter } from 'expo-router';
@@ -9,24 +9,36 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-// Use the recommended SafeAreaView
 import { ActivityIndicator, Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { addUser } from '~/lib/firestore';
+// IMPORT RTDB functions instead of firestore
+import { Database, ref, set } from 'firebase/database';
+// Import 'useFirebase' to get the 'database' instance
 import { useFirebase } from '../../context/FirebaseContext';
 import { User } from '../../navigation/types';
+import { styles2 } from '../../styles/css';
 // Import specific types for native firebase auth module
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-// Import the specific native firestore types needed for the assertion
-import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 // Import specific types for web firebase auth module
 import type { Auth } from 'firebase/auth';
 
-import { styles2 } from '../../styles/css';
+
+// Helper function to add user data to Realtime Database
+const addUserRTDB = async (database: Database, user: User): Promise<void> => {
+    // Set data at the path: /users/{user.uid}
+    const userRef = ref(database, 'users/' + user.uid);
+    await set(userRef, {
+        name: user.name,
+        email: user.email,
+        // Add other fields you need to store in the DB here
+    });
+};
+
 
 export default function SignUp() {
   const router = useRouter();
-  const { auth, firestore } = useFirebase();
+  // Changed from 'firestore' to 'database'
+  const { auth, database } = useFirebase(); 
   const theme = useTheme();
   const primaryColor = theme.colors.primary;
   const [user, setUser] = useState<Omit<User, 'uid'> & { password: string; name: string }>({
@@ -50,27 +62,14 @@ export default function SignUp() {
     resetErrMsg();
 
     // 1. Validation Checks
-    if (!user.name.trim()) {
-      setErrorMsg('Please type your name, this field is required!');
-      return;
-    }
-    if (!user.email) {
-      setErrorMsg('Please type your email, this field is required!');
-      return;
-    }
-    if (!validator.validate(user.email)) {
-        setErrorMsg('Please enter a valid email address.');
-        return;
-    }
-    if (!user.password || user.password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters long.');
-      return;
-    }
-    if (user.password !== password2) {
-      setErrorMsg('Passwords do not match!');
-      return;
-    }
-    if (!auth || !firestore) {
+    if (!user.name.trim()) { setErrorMsg('Please type your name, this field is required!'); return; }
+    if (!user.email) { setErrorMsg('Please type your email, this field is required!'); return; }
+    if (!validator.validate(user.email)) { setErrorMsg('Please enter a valid email address.'); return; }
+    if (!user.password || user.password.length < 6) { setErrorMsg('Password must be at least 6 characters long.'); return; }
+    if (user.password !== password2) { setErrorMsg('Passwords do not match!'); return; }
+    
+    // Check for required services
+    if (!auth || !database) {
       setErrorMsg('Firebase services not available.');
       return;
     }
@@ -81,13 +80,9 @@ export default function SignUp() {
       let userCredential;
 
       // --- V8/V9 COMPATIBILITY LOGIC (for explicit create user call) ---
-      // Check if the expected native v8 method exists (for @react-native-firebase).
       if (typeof (auth as FirebaseAuthTypes.Module).createUserWithEmailAndPassword === 'function') {
         userCredential = await (auth as FirebaseAuthTypes.Module).createUserWithEmailAndPassword(user.email, user.password);
-      } 
-      // If not, it's likely the web environment using the v9 modular web SDK.
-      else {
-        // Dynamically import the v9 modular function (requires 'firebase' npm package to be installed)
+      } else {
         const { createUserWithEmailAndPassword } = await import('firebase/auth');
         userCredential = await createUserWithEmailAndPassword(auth as Auth, user.email, user.password);
       }
@@ -99,8 +94,10 @@ export default function SignUp() {
         email: user.email,
       };
       
-      await addUser(firestore as FirebaseFirestoreTypes.Module, newUser);
-      // The AuthContext listener will pick up the auth state change and navigate.
+      // Use the RTDB function and pass the database instance
+      await addUserRTDB(database, newUser); 
+      
+      // The AuthContext listener will pick up the auth state change and navigate upon success.
       
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
@@ -108,9 +105,13 @@ export default function SignUp() {
       } else if (error.code === 'auth/invalid-email') {
         setErrorMsg('That email address is invalid!');
       } else {
-        // Log the full error for debugging purposes
         console.error("Signup error:", error); 
-        setErrorMsg(error.message || 'An error occurred during sign up.');
+        // Use type checking for 'unknown' error type safety
+        if (error instanceof Error) {
+            setErrorMsg(error.message || 'An error occurred during sign up.');
+        } else {
+            setErrorMsg('An unknown error occurred during sign up.');
+        }
       }
     } finally {
       setInPost(false); 
@@ -126,7 +127,6 @@ export default function SignUp() {
   const isUIDisabled = inPost;
 
   return (
-    // Use the react-native-safe-area-context SafeAreaView
     <SafeAreaView style={styles2.container}> 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -136,49 +136,11 @@ export default function SignUp() {
             <View style={styles2.itemCenter}>
               <Text style={styles2.titleText}>Join to Place Booking</Text>
             </View>
-            <TextInput
-              mode="outlined"
-              label="Name"
-              placeholder="Name*"
-              value={user.name}
-              onChangeText={(text) => updateUser('name', text)}
-              disabled={isUIDisabled}
-            />
-            
-            <TextInput
-              mode="outlined"
-              label="Email"
-              placeholder="Email*"
-              value={user.email}
-              onChangeText={(text) => updateUser('email', text)}
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              disabled={isUIDisabled}
-              style={{marginTop: 10}}
-            />
-            
-            <TextInput
-              mode="outlined"
-              label="Password"
-              placeholder="Password*"
-              secureTextEntry={true}
-              value={user.password}
-              onChangeText={(text) => updateUser('password', text)}
-              disabled={isUIDisabled}
-              style={{marginTop: 10}}
-            />
-            
-            <TextInput
-              mode="outlined"
-              label="Please type password again"
-              placeholder="Please type password again*"
-              secureTextEntry={true}
-              value={password2}
-              onChangeText={setPassWd2}
-              disabled={isUIDisabled}
-              style={{marginTop: 10}}
-            />
+            {/* Input Fields (Omitted for brevity, they remain the same as the original) */}
+            <TextInput mode="outlined" label="Name" placeholder="Name*" value={user.name} onChangeText={(text) => updateUser('name', text)} disabled={isUIDisabled} />
+            <TextInput mode="outlined" label="Email" placeholder="Email*" value={user.email} onChangeText={(text) => updateUser('email', text)} autoCapitalize="none" autoComplete="email" keyboardType="email-address" disabled={isUIDisabled} style={{marginTop: 10}} />
+            <TextInput mode="outlined" label="Password" placeholder="Password*" secureTextEntry={true} value={user.password} onChangeText={(text) => updateUser('password', text)} disabled={isUIDisabled} style={{marginTop: 10}} />
+            <TextInput mode="outlined" label="Please type password again" placeholder="Please type password again*" secureTextEntry={true} value={password2} onChangeText={setPassWd2} disabled={isUIDisabled} style={{marginTop: 10}} />
 
             {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
             

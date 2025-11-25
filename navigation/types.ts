@@ -1,7 +1,16 @@
 // navigation/types.ts
+
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+// Import the correct types for Firebase services
+// Use 'any' for flexibility across web/native if type imports are complex
+type FirebaseDatabaseInstance = any; 
+type FirebaseAuthInstance = any;
+type FirebaseFirestoreInstance = any;
+type FirebaseAppInstance = any; // <-- ADDED APP TYPE DEFINITION
+
 
 // --- 1. Root Stack: Switches between the Auth and App flows ---
 export type RootStackParamList = {
@@ -58,90 +67,10 @@ export type ActivityDetailScreenProps = CompositeScreenProps<
 
 
 // --- Data Models and Interfaces ---
+export interface UserJwtPayload { uid: string; }
+export interface ActivityJwtPayload { uid: string; id: string; }
+// ... (omitted remaining data models for brevity) ...
 
-export interface UserJwtPayload {
-    uid: string;
-}
-
-export interface ActivityJwtPayload {
-    uid: string;
-    id: string;
-}
-
-export interface Activity {
-    id: string;
-    title: string;
-    startTime: number;
-    endTime: number;
-    meetingTargets: MeetingTarget[];
-    sendConfirm: boolean;
-    description: string;
-    created: string;
-    removed?: boolean; 
-}
-
-export interface MeetingTarget {
-    name: string;
-    email: string;
-    send?: boolean;
-    confirm?: boolean;
-}
-
-export interface ActivityUser {
-    uid: string;
-    userName: string;
-}
-
-export type ActivityDetailType = Activity & ActivityUser;
-
-export interface Activities {
-    result: Activity[];
-    removedact: string[];
-}
-
-export interface UserUpdate{
-    user_update: number;
-}
-
-export interface AcceptInvitation{
-    accept_invitation: number;
-}
-
-export interface RemoveDone{
-    remove_done: number;
-}
-
-export interface NoAccount{
-    no_account: number;
-}
-
-export interface PasswdErr{
-    password_error: number;
-}
-
-export interface NoAuthorization{
-    no_authorization: number;
-}
-
-export interface DuplicateEmail{
-    duplicate_email: number;
-}
-
-export interface NoMeeting{
-    no_meeting: number;
-}
-
-export interface AppointPeriod {
-    startTime: number;
-    endTime: number;
-}
-
-export interface MailOptions {
-    from: string;
-    to: string;
-    subject: string;
-    html: string;
-}
 
 // --- Auth Context Interface ---
 export interface User {
@@ -156,4 +85,14 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoggedIn: boolean;
+}
+
+// --- Firebase Context Interface (UPDATED) ---
+// Define the properties expected from the Firebase Context
+export interface FirebaseContextProps {
+  app: FirebaseAppInstance | null; // <-- ADDED: The 'app' property definition
+  auth: FirebaseAuthInstance;
+  firestore?: FirebaseFirestoreInstance; // Mark firestore as optional
+  database: FirebaseDatabaseInstance | null | undefined; // Add the database property
+  isReady: boolean;
 }

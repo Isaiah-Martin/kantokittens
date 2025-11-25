@@ -1,4 +1,4 @@
-// app/(auth)/login.tsx (Revised with optimized button spacing and width and functional logic)
+// app/(auth)/login.tsx (Corrected TypeScript Errors)
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { Href, useRouter } from 'expo-router';
@@ -16,8 +16,6 @@ import { AuthContext } from '../../context/AuthContext';
 
 export default function Login() {
     const router = useRouter();
-    // Assuming AuthContext provides a function 'login' that accepts (email, password)
-    // and a 'loading' boolean state.
     const { login, loading } = useContext(AuthContext); 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -35,18 +33,22 @@ export default function Login() {
         }
 
         try {
-            // Call the login function from your AuthContext
-            const success = await login(email, password); 
-            if (success) {
-                // The AuthContext should ideally handle navigation to the main app flow upon success.
-                console.log('Login successful, context should handle navigation.');
-            } else {
-                // If login function returns false (or handles its own errors internally)
-                setErrorMsg('Login failed. Please check your credentials.');
-            }
+            // FIX 1: The 'login' function in AuthContext is typed as returning 'void' (Promise<void>).
+            // It modifies state internally and triggers navigation via the useEffect listener.
+            // We should just call it and await completion, not assign its (empty) return value to 'success'.
+            await login(email, password); 
+            
+            // The AuthContext listener handles the actual navigation upon successful authentication.
+            console.log('Login request sent. AuthContext should handle navigation via state change.');
+            
         } catch (error) {
+            // FIX 2: 'error' is of type 'unknown'. We must safely type-check it before accessing properties like '.message'.
             console.error("Login error:", error);
-            setErrorMsg(`An error occurred: ${error.message || 'Unknown error'}`);
+            if (error instanceof Error) {
+                setErrorMsg(`An error occurred: ${error.message}`);
+            } else {
+                setErrorMsg('An unknown error occurred during login.');
+            }
         }
     };
 
@@ -61,30 +63,24 @@ export default function Login() {
     
     console.log("Rendering Login screen."); 
 
-    // Define the new background color as a constant for readability
     const contentBgColor = '#D98CBF';
 
     return (
         <ParallaxScrollView
-            // Change header background color to white to match the image background
             headerBackgroundColor={{ light: '#FFFFFF', dark: '#000000' }}
             headerImage={
-                // Added a centering view around the image to ensure it's aligned properly
                 <View style={styles.imageContainer}>
                     <Image source={require('@/assets/images/KantoKittensCover.png')} style={styles.reactLogo} resizeMode="contain" />
                 </View>
             }
         >
-            {/* Set content background color to the requested #D98CBF */}
             <View style={{ flexGrow: 1, backgroundColor: contentBgColor }}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    // Reduced paddingHorizontal to ensure buttons fit within the screen width
                     style={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 30 }} 
                 >
                     <View style={{ gap: 20 }}>
                         <View style={{ alignItems: 'center' }}>
-                            {/* Larger, bold text for the header */}
                             <Text 
                                 variant="headlineMedium" 
                                 style={{ 
@@ -118,11 +114,9 @@ export default function Login() {
                             style={styles.input}
                         />
 
-                        {/* Error message display */}
                         {!!errorMsg && <Text style={{ color: 'red', marginTop: 10 }}>{errorMsg}</Text>}
                         
                         <View style={{ alignItems: 'center' }}>
-                            {/* Forgot Password Button - Uses expo-router for navigation */}
                             <Button
                                 mode="text"
                                 uppercase={false}
@@ -134,30 +128,27 @@ export default function Login() {
                         </View>
                         
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-                            {/* Log In Button - Calls handleLogin function */}
                             <Button
                                 mode="contained"
                                 style={styles.dynamicButton} 
-                                onPress={handleLogin} // This connects the button to the logic
+                                onPress={handleLogin} 
                                 disabled={isUIDisabled}
                                 loading={isUIDisabled}
                             >
                                 Log In
                             </Button>
-                            {/* Reset Button - Calls resetForm function */}
                             <Button
                                 mode="contained"
                                 style={styles.dynamicButton} 
-                                onPress={resetForm} // This connects the button to the logic
+                                onPress={resetForm} 
                                 disabled={isUIDisabled}
                             >
                                 Reset
                             </Button>
-                            {/* Sign Up Button - Uses expo-router for navigation */}
                             <Button
                                 mode="contained" 
                                 style={styles.dynamicButton} 
-                                onPress={() => router.push('/(auth)/signup' as Href)} // This connects the button to the navigation
+                                onPress={() => router.push('/(auth)/signup' as Href)} 
                                 disabled={isUIDisabled}
                             >
                                 Sign Up
@@ -165,7 +156,6 @@ export default function Login() {
                         </View>
                     </View>
                 </KeyboardAvoidingView>
-                {/* Simplified loading indicator display */}
                 {isUIDisabled && (
                   <View style={styles.loadingOverlay}>
                       <ActivityIndicator size="large" animating={true} color={primaryColor} />
@@ -195,13 +185,12 @@ const styles = StyleSheet.create({
         backgroundColor: 'black', 
         height: 50, 
         justifyContent: 'center',
-        flexGrow: 1, // Allows buttons to share available space evenly
+        flexGrow: 1, 
     },
     loadingOverlay: {
-        position: 'absolute', // Position over content
+        position: 'absolute', 
         top: 0, left: 0, right: 0, bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
-        // Optional: add a slight overlay color here if desired
     }
 });
