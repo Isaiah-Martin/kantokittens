@@ -41,14 +41,13 @@ export type AppTabsParamList = {
 
 // --- 5. Home Stack: A stack nested inside the "HomeTab" ---
 export type HomeStackParamList = {
-  index: object | undefined; // The root of the Home stack
+  index: object | undefined; 
   booking: undefined;
   'add-booking': undefined;
   settings: undefined;
-  'review-activity': undefined;
-  'activity-detail': undefined;
+  'review-activity': undefined; // Assuming this is also a screen that takes the object
+  'activity-detail': { activityObj: Activity }; // <-- FIX THIS LINE
 };
-
 
 // --- 6. Individual Screen Props for Type Safety (Advanced) ---
 // Props for the Settings screen (part of AppStack)
@@ -66,10 +65,33 @@ export type ActivityDetailScreenProps = CompositeScreenProps<
 >;
 
 
-// --- Data Models and Interfaces ---
+// --- Data Models and Interfaces (REVISED SECTION) ---
 export interface UserJwtPayload { uid: string; }
 export interface ActivityJwtPayload { uid: string; id: string; }
-// ... (omitted remaining data models for brevity) ...
+
+// Defines the structure for meeting attendees
+export interface MeetingTarget {
+  name: string;
+  email: string;
+  confirm?: boolean;
+}
+
+// Defines the structure for a saved activity/booking
+export interface Activity {
+  id: string; // Document ID (added for client-side use)
+  title: string;
+  // Changed from `startDate: Date;` to `startTime: number;` to match your Firestore logic
+  startTime: number; 
+  // Changed from `endDate: Date;` to `endTime: number;` to match your Firestore logic
+  endTime: number;
+  // Added optional fields used in the booking form logic
+  description?: string;
+  sendConfirm?: boolean;
+  meetingTargets?: MeetingTarget[];
+  timezone?: string;
+  ownerId: string; // Added ownerId field
+  created: number | string; // Use number (timestamp) or string (ISO string)
+}
 
 
 // --- Auth Context Interface ---

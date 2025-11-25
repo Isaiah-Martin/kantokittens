@@ -1,48 +1,63 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+// FIX: Explicitly import Text from react-native
+import { Text } from 'react-native';
+// Import your specific components or constants if needed
+// import { HapticTab } from '@/components/haptic-tab';
+// import { IconSymbol } from '@/components/ui/icon-symbol';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+// Define the brand color
+const primaryColor = '#D98CBF';
+const inactiveBg = '#f0f0f0';
+const activeTint = '#ffffff'; // White text/icon for contrast
+
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: activeTint, // Icons/text when active
+        tabBarInactiveTintColor: '#888', // Icons/text when inactive
         headerShown: false,
-        tabBarButton: HapticTab,
+        // If you are having issues with HapticTab or IconSymbol imports, 
+        // you might need to temporarily comment them out until paths are correct.
+        // tabBarButton: HapticTab, 
       }}>
       <Tabs.Screen
-        name="index"
+        name="hometab" 
         options={{
           title: 'Home',
-          tabBarActiveBackgroundColor: '#D98CBF',
-          tabBarActiveTintColor: '#ffffff',
-          tabBarInactiveBackgroundColor: '#f0f0f0',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={'black'} />,
+          tabBarActiveBackgroundColor: primaryColor,
+          tabBarInactiveBackgroundColor: inactiveBg,
+          tabBarIcon: ({ color }) => <Text>🏠</Text>, 
         }}
       />
       <Tabs.Screen
-        name="booking"
+        name="hometab/booking"
         options={{
-          title: 'Book',
-          tabBarActiveBackgroundColor: '#D98CBF',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="document.badge.clock" color={'black'} />,
+          title: 'Bookings',
+          tabBarActiveBackgroundColor: primaryColor,
+          tabBarIcon: ({ color }) => <Text>📅</Text>,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarActiveBackgroundColor: '#D98CBF',
-          tabBarInactiveBackgroundColor: '#f0f0f0',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="figure.yoga.circle.fill" color={'black'} />,
+          tabBarActiveBackgroundColor: primaryColor,
+          tabBarInactiveBackgroundColor: inactiveBg,
+          tabBarIcon: ({ color }) => <Text>🗺️</Text>,
         }}
       />
-      {/* Additional tabs like `logout` can be here if desired */}
+      {/* If you have a settings page at app/(app)/(tabs)/settings.tsx */}
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarActiveBackgroundColor: primaryColor,
+          tabBarIcon: ({ color }) => <Text>⚙️</Text>,
+        }}
+      />
     </Tabs>
   );
 }

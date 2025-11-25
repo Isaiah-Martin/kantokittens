@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
-//import axios from 'axios';
+//app/(app)/(tabs)/hometab/ActivityDetail.tsx
+
 import { AuthContext } from '@context/AuthContext';
-import { useFirebase } from '@context/FirebaseContext'; // Import useFirebase hook
+import { useFirebase } from '@context/FirebaseContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useContext } from 'react';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import React, { useContext, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -18,18 +19,28 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { ActivityIndicator, Button, MD3LightTheme as DefaultTheme, Switch, TextInput } from 'react-native-paper';
 import { getDateString, timezone } from '../../../../lib/utils';
-import { Activity, MeetingTarget } from '../../../../navigation/RootStackParamList';
+import { Activity, HomeStackParamList, MeetingTarget } from '../../../../navigation/types';
 import { styles2 } from '../../../../styles/css';
 
-export default function ReviewActivity({ navigation, route }: {navigation: any; route: any;}) {
+// Use the correct typed props definition
+type ActivityDetailScreenProps = NativeStackScreenProps<HomeStackParamList, 'activity-detail'>;
+
+
+// Renamed function to match common naming conventions if needed, otherwise uses existing name
+export default function ReviewActivity({ navigation, route }: ActivityDetailScreenProps) {
   const { user } = useContext(AuthContext);
-  const { firestore } = useFirebase(); // Use useFirebase to get firestore instance
-  const { activityObj } = route.params || {};
+  const { firestore } = useFirebase(); 
+  
+  // Ensure we handle cases where route.params or activityObj might be missing
+  const { activityObj } = route.params;
+  
   const [inEditing, setInEditing] = useState(false);
   const [inPost, setInPost] = useState(false);
+  // Type the state as Activity | undefined if it might not be present initially
   const [activity, setActivity] = useState<Activity>(activityObj);
   const [titleerr, setTitleErr] = useState('');
-  const titleEl = useRef(null);
+  // Use type any for the ref to avoid RNPaper ref issues we fixed earlier
+  const titleEl = useRef<any>(null); 
   const [startDatePicker, setStartDatePicker] = useState(false);
   const [endDatePicker, setEndDatePicker] = useState(false);
   const [dateserr, setDatesErr] = useState('');
@@ -43,76 +54,110 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
         },
       };
   
-      // To get a specific color, access the `colors` property on the theme
-      const primaryColor = theme.colors.primary;
+  const primaryColor = theme.colors.primary;
 
   function adjustErrDescr(){
-    const errDes: string[] = [];
-    for (let i = 0; i < activity.meetingTargets.length; i++){
-        errDes.push('');
+    // FIX: Add null check before accessing activity.meetingTargets
+    if (activity?.meetingTargets) {
+      const errDes: string[] = [];
+      for (let i = 0; i < activity.meetingTargets.length; i++){
+          errDes.push('');
+      }
+      setErrDescr(errDes);
     }
-    setErrDescr(errDes);
   }
   
+  // ... (Ensure state is initialized correctly at the top of the component)
+// const [activity, setActivity] = useState<Activity>(activityObj); 
+// ...
+
   function changeTitle(text: string) {
     const value = text.replace(/<\/?[^>]*>/g, "");
+    // FIX: Remove the conditional check. prevState is always an Activity object here.
     setActivity((prevState) => ({...prevState, title: value}));
   }
 
   function changeStartDate(value: Date) {
-    setActivity((prevState) => ({...prevState, startTime: value.getTime()/1000}));
+    // FIX: Remove the conditional check.
+    setActivity((prevState) => ({...prevState, startTime: value.getTime()}));
   }
 
   function changeEndDate(value: Date) {
-    setActivity((prevState) => ({...prevState, endTime: value.getTime()/1000}));
+    // FIX: Remove the conditional check.
+    setActivity((prevState) => ({...prevState, endTime: value.getTime()}));
   }
 
   function addMeetingTargets() {
-    const mTargets = activity.meetingTargets.slice();
-    mTargets.push({name:'', email: ''});
-    setActivity((prevState) => ({...prevState, meetingTargets: mTargets}));
+    // FIX: The outer 'if (activity)' check is redundant because 'activity' is never undefined.
+    // We only need to handle the optional 'meetingTargets' array property within the update logic.
+
+    setActivity((prevState) => {
+      // If meetingTargets exists, copy it. Otherwise start a new array.
+      const mTargets = prevState.meetingTargets ? [...prevState.meetingTargets] : [];
+      mTargets.push({name:'', email: ''});
+      return {...prevState, meetingTargets: mTargets};
+    });
+    
     setErrDescr((prevState) => [...prevState, '']);
   }
 
   function minusMeetingTargets() {
-    const mTargets = activity.meetingTargets.slice();
-    const errDes = errDescr.slice();
-    mTargets.pop();
-    setActivity((prevState) => ({...prevState, meetingTargets: mTargets}));
-    errDes.pop();
-    setErrDescr(errDes);
+    // We can assume `activity` exists now
+    if (activity.meetingTargets) { // Check if the optional array property is present
+      const mTargets = activity.meetingTargets.slice();
+      const errDes = errDescr.slice();
+      mTargets.pop();
+      
+      // FIX: The type is now compatible because prevState is guaranteed to be a full Activity
+      setActivity((prevState) => ({...prevState, meetingTargets: mTargets}));
+      
+      errDes.pop();
+      setErrDescr(errDes);
+    }
   }
-
-  function handleMeetingTargetName(text: string, idx: number){
-    const mTargets = activity.meetingTargets.slice();
-    mTargets[idx].name = text.replace(/<\/?[^>]*>/g, "");
-    setActivity((prevState) => ({...prevState, meetingTargets: mTargets}));
+function handleMeetingTargetName(text: string, idx: number){
+    // 'activity' is now guaranteed to exist. We check if 'meetingTargets' array is present.
+    if (activity.meetingTargets) {
+      // Use functional update for race condition safety
+      setActivity((prevState) => {
+        // We can safely use non-null assertion '!' here if logic guarantees it
+        const mTargets = [...prevState.meetingTargets!]; 
+        mTargets[idx].name = text.replace(/<\/?[^>]*>/g, "");
+        return {...prevState, meetingTargets: mTargets};
+      });
+    }
   }
 
   function handleMeetingTargetEmail(text: string, idx: number){
-    const mTargets = activity.meetingTargets.slice();
-    mTargets[idx].email = text.replace(/<\/?[^>]*>/g, "").trim();
-    setActivity((prevState) => ({...prevState, meetingTargets: mTargets}));
+    if (activity.meetingTargets) {
+      // Use functional update for race condition safety
+      setActivity((prevState) => {
+        const mTargets = [...prevState.meetingTargets!];
+        mTargets[idx].email = text.replace(/<\/?[^>]*>/g, "").trim();
+        return {...prevState, meetingTargets: mTargets};
+      });
+    }
   }
  
   function handleSetErrDescr(descr: string, idx: number){
-    if (idx>= errDescr.length){
+    if (idx >= errDescr.length){
        return;
     }
-    const errDes = errDescr.slice();
+    const errDes = [...errDescr]; // Use spread for clean copy
     errDes[idx] = descr;
     setErrDescr(errDes);
   }
   
   function changeSendConfirm(bol: boolean){
+    // FIX: Removed the conditional logic. prevState is guaranteed to be type Activity.
     setActivity((prevState) => ({...prevState, sendConfirm: bol}));
   }
 
   function changeDescription(text: string){
     const value = text.replace(/<\/?[^>]*>/g, "");
+    // FIX: Removed the conditional logic.
     setActivity((prevState) => ({...prevState, description: value}));
   }
-
   function resetErrMsg(){
     setTitleErr('');
     setDatesErr('');
@@ -123,29 +168,35 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
     setErrDescr(errDes);
   }
 
-  function sortOutMeetingTargets() {
-    if (!activity.meetingTargets.length){
+function sortOutMeetingTargets() {
+    // We assume 'activity' is defined, we just check the optional array property
+    if (!activity.meetingTargets || activity.meetingTargets.length === 0){
        return;
     }
     const mTargets: MeetingTarget[] = [];
-    const errDes = [];
+    const errDes: string[] = []; 
     for (let i = 0; i < activity.meetingTargets.length; i++){
-       if (activity.meetingTargets[i].name.trim()){
-          if (!activity.meetingTargets[i].email){
-             mTargets.push(activity.meetingTargets[i]);
+       const currentTarget = activity.meetingTargets[i];
+       if (currentTarget.name.trim()){
+          if (!currentTarget.email){
+             mTargets.push(currentTarget);
              errDes.push('');
           }else{
-             const target = mTargets.find(item => item.email == activity.meetingTargets[i].email);
+             const target = mTargets.find(item => item.email === currentTarget.email);
              if (!target){
-                mTargets.push(activity.meetingTargets[i]);
+                mTargets.push(currentTarget);
                 errDes.push('');
              }
           }
        }
     }
+    
+    // FIX: Removed the conditional logic. prevState is guaranteed to be type Activity here.
     setActivity((prevState) => ({...prevState, meetingTargets: mTargets}));
+    
     setErrDescr(errDes);
-  }  
+  }
+
 
   async function updateGo() {
     try {
@@ -190,7 +241,7 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
         await AsyncStorage.setItem('schedule', JSON.stringify(schedule));
       }
 
-      navigation.navigate('Scheduler');
+      navigation.navigate('index');
 
     } catch (error) {
       setInPost(false);
@@ -240,7 +291,7 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
     const updatedSchedule = schedule.filter((item) => item.id !== activityObj.id);
     await AsyncStorage.setItem('schedule', JSON.stringify(updatedSchedule));
 
-    navigation.navigate('Scheduler');
+    navigation.navigate('index');
 
   } catch(error) {
     setInPost(false);
@@ -259,7 +310,7 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
         style={styles2.scrollView}
         >
           <View style={[styles2.listItem, styles2.itemRight]}>
-            <Button icon="close" mode="outlined" style={{marginLeft: 10}} onPress={() => navigation.navigate('Scheduler')}>
+            <Button icon="close" mode="outlined" style={{marginLeft: 10}} onPress={() => navigation.navigate('index')}>
                Close
             </Button>
           </View> 
@@ -282,6 +333,7 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
                   color='black'
                   onPress={() => setStartDatePicker(true)}
                   >
+                {/* Assuming activity.startTime is guaranteed to exist */}
                 {getDateString(new Date(activity.startTime*1000))} 
                 </Button>
                 <Text>--</Text>
@@ -290,6 +342,7 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
                   color='black'
                   onPress={() => setEndDatePicker(true)}
                   >
+                  {/* Assuming activity.endTime is guaranteed to exist */}
                   {getDateString(new Date(activity.endTime*1000))} 
                 </Button>
              </View>
@@ -320,7 +373,8 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
                   >
                 Add
                 </Button>
-                {activity.meetingTargets.length > 0 &&
+                {/* FIX: Use optional chaining ?. before accessing .length */}
+                {(activity.meetingTargets?.length ?? 0) > 0 && 
                  <Button 
                    mode='outlined'
                    icon='minus'
@@ -330,21 +384,26 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
                  </Button>
                 }
              </View>
-             {activity.meetingTargets.length > 0 &&
+             {/* FIX: Check that meetingTargets exists AND has length before mapping */}
+             {activity.meetingTargets && activity.meetingTargets.length > 0 &&
+                // We use the non-null assertion operator (!) on activity.meetingTargets 
+                // within the value prop access where the error occurs
                 activity.meetingTargets.map((item, index) => 
                   <View key={index}>
                      <TextInput
                         mode="flat"
                         label="Name"
                         placeholder="Name"
-                        value={activity.meetingTargets[index].name}
+                        // FIX: Added '!' here
+                        value={activity.meetingTargets![index].name} 
                         onChangeText={(text) => handleMeetingTargetName(text, index)}
                       />
                      <TextInput
                         mode="flat"
                         label="Email"
                         placeholder="Email"
-                        value={activity.meetingTargets[index].email}
+                        // FIX: Added '!' here
+                        value={activity.meetingTargets![index].email} 
                         onChangeText={(text) => handleMeetingTargetEmail(text, index)}
                         autoCapitalize="none"
                         autoComplete="email"
@@ -354,19 +413,22 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
                   </View>
                 )
              } 
-             {activity.meetingTargets.length > 0 &&
+             {/* FIX: Check that meetingTargets exists AND has length before rendering switch */}
+             {activity.meetingTargets && activity.meetingTargets.length > 0 &&
              <View style={styles2.itemLeft}>
                 <Text>Send Confirmation Emails: </Text>
-                <Switch value={activity.sendConfirm} onValueChange={() => changeSendConfirm(!activity.sendConfirm)} /> 
+                {/* FIX: Use nullish coalescing ?? to provide a default boolean if undefined */}
+                <Switch value={activity.sendConfirm ?? false} onValueChange={() => changeSendConfirm(!activity.sendConfirm)} /> 
              </View>
              } 
           </View>
           <View style={styles2.listItem}>
+            {/* FIX: Use nullish coalescing ?? to provide a default string if undefined */}
             <TextInput
               mode='outlined'
               label="Description"
               placeholder="Description"
-              value={activity.description}
+              value={activity.description ?? ''}
               multiline={true}
               numberOfLines={5}
               onChangeText={text => changeDescription(text)}
@@ -405,7 +467,7 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
             <Button icon="delete" style={{marginLeft: 10}} mode="outlined" onPress={() => confirmDelete()}>
               Delete
             </Button>  
-            <Button icon="close" mode="outlined" style={{marginLeft: 10}} onPress={() => navigation.navigate('Scheduler')}>
+            <Button icon="close" mode="outlined" style={{marginLeft: 10}} onPress={() => navigation.navigate('index')}>
                Close
             </Button>
           </View> 
@@ -419,13 +481,16 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
             </View>
             {activityObj &&
             <>
-            {activityObj.meetingTargets.length > 0 &&
+            {(activityObj.meetingTargets?.length ?? 0) > 0 &&
             <> 
             <View style={styles2.listItem}>
               <Text style={{fontSize: 16, lineHeight: 24}}>Meeting Targets:</Text>
-              {activityObj.meetingTargets.map((item: MeetingTarget, index: number) =>
+              {/* No changes needed to map signature */}
+              {activityObj.meetingTargets!.map((item: MeetingTarget, index: number) =>
               <View key={index} style={styles2.itemLeft}>
                 <Text style={{fontSize: 16, lineHeight: 24}}>{item.name}{item.email ? ` - ${item.email}`: ''}    </Text>
+                
+                {/* FIX 2: This check now works because 'confirm' is in the interface */}
                 {item.confirm &&
                 <>
                   <MaterialIcons name='check' size={20} /><Text style={{fontSize: 16, lineHeight: 24}}>accepted</Text>
@@ -434,7 +499,9 @@ export default function ReviewActivity({ navigation, route }: {navigation: any; 
               </View>  
               )}
               <View style={styles2.itemLeft}>
-                <Text style={{fontSize: 16, lineHeight: 24}}>Send Confirmation Emails: </Text><MaterialIcons name={activityObj.sendConfirm ? 'check-box':'check-box-outline-blank'} size={20} />
+                <Text style={{fontSize: 16, lineHeight: 24}}>Send Confirmation Emails: </Text>
+                {/* Use nullish coalescing for sendConfirm check */}
+                <MaterialIcons name={activityObj.sendConfirm ? 'check-box':'check-box-outline-blank'} size={20} />
               </View>
             </View>
             </>

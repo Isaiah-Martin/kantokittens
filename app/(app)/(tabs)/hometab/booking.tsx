@@ -1,7 +1,8 @@
+// app/(app)/(tabs)/hometab/booking.tsx
+
 import { AuthContext } from '@context/AuthContext';
 import { useFirebase } from '@context/FirebaseContext'; // Import useFirebase hook
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// booking.tsx
 import { FirebaseFirestoreTypes, collection, getDocs } from '@react-native-firebase/firestore';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useContext, useState } from 'react';
