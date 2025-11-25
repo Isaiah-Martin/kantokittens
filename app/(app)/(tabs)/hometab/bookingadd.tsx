@@ -1,19 +1,21 @@
 // app/(app)/(tabs)/hometab/bookingadd.tsx
+// Using @react-native-picker/picker alternative
 
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Button,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   View
 } from 'react-native';
-import RNPickerSelect from 'react-native-picker-select';
+// Import the native picker component
+import { Picker } from '@react-native-picker/picker';
 // Import SafeAreaView from 'react-native-safe-area-context' as recommended by your console logs
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 // --- Types ---
 interface ActivitySchedule {
@@ -38,7 +40,7 @@ const BookingAddScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false); 
 
   const selectedActivity = activities.find(a => a.Activity === selectedActivityName);
-  const placeholderProps = { label: "Select an option...", value: undefined, color: '#9E9E9E' };
+  // Removed placeholderProps as the native picker handles placeholders differently
   const primaryColor = '#EBC5F1'; 
 
   const handleBookingConfirm = async () => {
@@ -69,9 +71,6 @@ const BookingAddScreen = () => {
     }
   };
 
-  const activityPickerZIndex = 10;
-  const dayPickerZIndex = 20;
-  const timePickerZIndex = 30;
 
   if (isSubmitting) {
     // Use a dedicated loading container style with centering
@@ -90,59 +89,60 @@ const BookingAddScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContentContainer}>
         <Text style={styles.title}>Schedule a Booking</Text>
 
+        {/* Activity Picker using Native Picker */}
         <Text style={styles.label}>Choose Activity:</Text>
-        <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: activityPickerZIndex }]}>
-          <RNPickerSelect
-            onValueChange={(itemValue) => {
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={selectedActivityName}
+            onValueChange={(itemValue: string | undefined) => { // Type explicitly for the picker
               setSelectedActivityName(itemValue);
               setSelectedDay(undefined);
               setSelectedTime(undefined);
             }}
-            value={selectedActivityName} 
-            items={activities.map((activity) => ({
-              label: activity.Activity,
-              value: activity.Activity,
-            }))}
-            placeholder={placeholderProps}
-            style={pickerSelectStyles}
-          />
+          >
+            {/* Added a disabled placeholder item at the top */}
+            <Picker.Item label="Select an option..." value={undefined} color="#9E9E9E" />
+            {activities.map((activity) => (
+              <Picker.Item key={activity.Activity} label={activity.Activity} value={activity.Activity} />
+            ))}
+          </Picker>
         </View>
 
+        {/* Day Picker (conditionally rendered) */}
         {selectedActivityName && (
           <>
             <Text style={styles.label}>Choose Day:</Text>
-            <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: dayPickerZIndex }]}>
-              <RNPickerSelect
-                onValueChange={(itemValue) => {
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedDay}
+                onValueChange={(itemValue: string | undefined) => {
                   setSelectedDay(itemValue);
                   setSelectedTime(undefined);
                 }}
-                value={selectedDay}
-                items={selectedActivity?.DaysOfWeek.map((day) => ({
-                  label: day,
-                  value: day,
-                })) || []} 
-                placeholder={placeholderProps}
-                style={pickerSelectStyles}
-              />
+              >
+                <Picker.Item label="Select an option..." value={undefined} color="#9E9E9E" />
+                {selectedActivity?.DaysOfWeek.map((day) => (
+                  <Picker.Item key={day} label={day} value={day} />
+                ))}
+              </Picker>
             </View>
           </>
         )}
 
+        {/* Time Picker (conditionally rendered) */}
         {selectedDay && selectedActivityName && (
           <>
             <Text style={styles.label}>Choose Time:</Text>
-            <View style={[styles.pickerContainer, Platform.OS === 'android' && { zIndex: timePickerZIndex }]}>
-              <RNPickerSelect
-                onValueChange={(itemValue) => setSelectedTime(itemValue)}
-                value={selectedTime}
-                items={selectedActivity?.HoursOfDay.map((time) => ({
-                  label: time,
-                  value: time,
-                })) || []} 
-                placeholder={placeholderProps}
-                style={pickerSelectStyles}
-              />
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedTime}
+                onValueChange={(itemValue: string | undefined) => setSelectedTime(itemValue)}
+              >
+                 <Picker.Item label="Select an option..." value={undefined} color="#9E9E9E" />
+                {selectedActivity?.HoursOfDay.map((time) => (
+                  <Picker.Item key={time} label={time} value={time} />
+                ))}
+              </Picker>
             </View>
           </>
         )}
@@ -160,23 +160,7 @@ const BookingAddScreen = () => {
   );
 };
 
-const pickerSelectStyles = StyleSheet.create({
-  inputIOS: {
-    fontSize: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    color: 'black',
-    paddingRight: 30, 
-  },
-  inputAndroid: {
-    fontSize: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    color: 'black',
-    paddingRight: 30, 
-  },
-});
-
+// Styles are adjusted for the native Picker, which doesn't need inputIOS/Android styles
 const styles = StyleSheet.create({
   // Use a simple safe area container
   safeArea: {
@@ -214,12 +198,14 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     marginBottom: 20,
-    overflow: 'hidden',
+    // The native picker handles its own zIndex internally much better
+    // overflow: 'hidden', // Can sometimes cause issues with the picker dropdown modal
     backgroundColor: '#fafafa',
+    justifyContent: 'center', // Helps vertically align the picker content
   },
   buttonContainer: {
     marginTop: 20,
-    zIndex: 0, // Keep zIndex low to not interfere with pickers
+    // zIndex is not needed here anymore as the native picker works differently
   },
 });
 
