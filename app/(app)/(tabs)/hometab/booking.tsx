@@ -113,7 +113,7 @@ export default function Booking() {
   console.log("Navigating to scheduling page...");
   // Use the correct path based on your file structure
   router.push('/hometab/bookingadd'); 
-};
+  };
 
   return (
     <SafeAreaView style={styles.container}>

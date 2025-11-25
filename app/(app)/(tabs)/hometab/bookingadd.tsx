@@ -1,9 +1,11 @@
 // app/(app)/(tabs)/hometab/bookingadd.tsx
 
-import { Picker } from '@react-native-picker/picker';
-import { router } from 'expo-router';
+// Remove this commented out line if it's still there
+// import { Picker } from '@react-native-picker/picker'; 
+
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
+import RNPickerSelect from 'react-native-picker-select';
 
 // Define the type for an activity item
 interface ActivitySchedule {
@@ -20,9 +22,6 @@ const mockActivities: ActivitySchedule[] = [
   { "Activity": "Coffee Study Session", "DaysOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "HoursOfDay": ["09:00", "10:00", "11:00", "13:00", "14:00"] }
 ];
 
-// --- FIREBASE INTEGRATION NOTE ---
-// (Note remains here as a comment for future implementation)
-
 const BookingAddScreen = () => {
   const [activities, setActivities] = useState<ActivitySchedule[]>(mockActivities);
   const [selectedActivityName, setSelectedActivityName] = useState<string | undefined>(undefined);
@@ -30,15 +29,13 @@ const BookingAddScreen = () => {
   const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false); 
 
-  // Find the currently selected activity object based on the name
   const selectedActivity = activities.find(a => a.Activity === selectedActivityName);
 
-  // Set initial default selections upon data load if needed
   useEffect(() => {
-    // Only set a default if we haven't selected one yet and activities exist
-    if (activities.length > 0 && selectedActivityName === undefined) {
-      setSelectedActivityName(activities[0].Activity);
-    }
+    // It is better to leave this undefined until the user explicitly selects something in this specific component's use case
+    // if (activities.length > 0 && selectedActivityName === undefined) {
+    //   setSelectedActivityName(activities[0].Activity);
+    // }
   }, [activities, selectedActivityName]);
 
 
@@ -47,16 +44,7 @@ const BookingAddScreen = () => {
       Alert.alert(
         "Booking Confirmed",
         `You are booked for ${selectedActivityName} on ${selectedDay} at ${selectedTime}.`,
-        [
-          { 
-            text: "OK", 
-            onPress: () => {
-              router.back(); 
-            } 
-          }
-        ]
       );
-      // In a real app, you would send this booking data to Firebase/backend here
     } else {
       Alert.alert("Missing Information", "Please select an activity, day, and time.");
     }
@@ -71,64 +59,68 @@ const BookingAddScreen = () => {
     );
   }
 
+  // Define a standard placeholder object to use for all pickers
+  const placeholderProps = { label: "Select an option...", value: undefined };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Schedule a Booking</Text>
 
-      {/* Activity Picker */}
+      {/* Activity Picker - Corrected Syntax */}
       <Text style={styles.label}>Choose Activity:</Text>
       <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={selectedActivityName}
-          // Explicitly type itemValue as a string or undefined for TypeScript compliance
-          onValueChange={(itemValue: string | undefined) => {
+        <RNPickerSelect
+          onValueChange={(itemValue) => {
             setSelectedActivityName(itemValue);
-            // Reset day and time when activity changes
             setSelectedDay(undefined);
             setSelectedTime(undefined);
-          }}>
-          {activities.map((activity) => (
-            <Picker.Item key={activity.Activity} label={activity.Activity} value={activity.Activity} />
-          ))}
-        </Picker>
+          }}
+          // Use 'value' prop instead of 'selectedValue'
+          value={selectedActivityName} 
+          // Pass items as an array of {label, value} objects using the 'items' prop
+          items={activities.map((activity) => ({
+            label: activity.Activity,
+            value: activity.Activity,
+          }))}
+          placeholder={placeholderProps}
+        />
       </View>
 
-      {/* Day Picker (conditionally rendered) */}
+      {/* Day Picker (conditionally rendered) - Corrected Syntax */}
       {selectedActivity && (
         <>
           <Text style={styles.label}>Choose Day:</Text>
           <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedDay}
-              // Explicitly type itemValue as a string or undefined
-              onValueChange={(itemValue: string | undefined) => {
+            <RNPickerSelect
+              onValueChange={(itemValue) => {
                 setSelectedDay(itemValue);
-                // Reset time when day changes
                 setSelectedTime(undefined);
-              }}>
-              <Picker.Item label="Select a Day" value={undefined} enabled={false} />
-              {selectedActivity.DaysOfWeek.map((day) => (
-                <Picker.Item key={day} label={day} value={day} />
-              ))}
-            </Picker>
+              }}
+              value={selectedDay}
+              items={selectedActivity.DaysOfWeek.map((day) => ({
+                label: day,
+                value: day,
+              }))}
+              placeholder={placeholderProps}
+            />
           </View>
         </>
       )}
 
-      {/* Time Picker (conditionally rendered) */}
+      {/* Time Picker (conditionally rendered) - Corrected Syntax */}
       {selectedDay && selectedActivity && (
         <>
           <Text style={styles.label}>Choose Time:</Text>
           <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedTime}
-              // Explicitly type itemValue as a string or undefined
-              onValueChange={(itemValue: string | undefined) => setSelectedTime(itemValue)}>
-              <Picker.Item label="Select a Time" value={undefined} enabled={false} />
-              {selectedActivity.HoursOfDay.map((time) => (
-                <Picker.Item key={time} label={time} value={time} />
-              ))}
-            </Picker>
+            <RNPickerSelect
+              onValueChange={(itemValue) => setSelectedTime(itemValue)}
+              value={selectedTime}
+              items={selectedActivity.HoursOfDay.map((time) => ({
+                label: time,
+                value: time,
+              }))}
+              placeholder={placeholderProps}
+            />
           </View>
         </>
       )}
@@ -168,6 +160,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 20,
     overflow: 'hidden',
+    paddingHorizontal: 10, // Added padding for better appearance
   },
 });
 

@@ -1,3 +1,4 @@
+//app/(app)/(tabs)/hometab/explore.tsx
 import { StyleSheet } from 'react-native';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';

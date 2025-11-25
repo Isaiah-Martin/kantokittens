@@ -1,3 +1,4 @@
+//app/settings.tsx
 import { useFocusEffect, useRouter } from 'expo-router';
 import passwordValidator from 'password-validator';
 import React, { useCallback, useContext, useRef, useState } from 'react';
