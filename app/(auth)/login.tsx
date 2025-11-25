@@ -1,4 +1,4 @@
-// app/(auth)/login.tsx (Corrected TypeScript Errors)
+// app/(auth)/login.tsx (Revised to handle Firebase Initialization Timing)
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { Href, useRouter } from 'expo-router';
@@ -12,11 +12,16 @@ import {
 } from 'react-native';
 import { ActivityIndicator, Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { AuthContext } from '../../context/AuthContext';
+// Import FirebaseContext to check initialization status
+import { FirebaseContext } from '../../context/FirebaseContext';
 
 
 export default function Login() {
     const router = useRouter();
     const { login, loading } = useContext(AuthContext); 
+    // Get the isReady state from FirebaseContext
+    const { isReady: firebaseIsReady } = useContext(FirebaseContext); 
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
@@ -27,22 +32,24 @@ export default function Login() {
     // --- Functional Logic Implementation ---
     const handleLogin = async () => {
         setErrorMsg(''); // Clear previous errors
+        
+        // Ensure Firebase is ready before attempting login (redundant check if UI is disabled, but safe)
+        if (!firebaseIsReady) {
+            setErrorMsg('Firebase services are still initializing. Please wait a moment.');
+            return;
+        }
+
         if (!email || !password) {
             setErrorMsg('Please enter both email and password.');
             return;
         }
 
         try {
-            // FIX 1: The 'login' function in AuthContext is typed as returning 'void' (Promise<void>).
-            // It modifies state internally and triggers navigation via the useEffect listener.
-            // We should just call it and await completion, not assign its (empty) return value to 'success'.
+            // The 'login' function handles navigation internally via the AuthContext listener.
             await login(email, password); 
-            
-            // The AuthContext listener handles the actual navigation upon successful authentication.
             console.log('Login request sent. AuthContext should handle navigation via state change.');
             
         } catch (error) {
-            // FIX 2: 'error' is of type 'unknown'. We must safely type-check it before accessing properties like '.message'.
             console.error("Login error:", error);
             if (error instanceof Error) {
                 setErrorMsg(`An error occurred: ${error.message}`);
@@ -59,7 +66,8 @@ export default function Login() {
         setErrorMsg('');
     }
 
-    const isUIDisabled = loading;
+    // Combine 'loading' state (from AuthContext) and 'isReady' state (from FirebaseContext)
+    const isUIDisabled = loading || !firebaseIsReady;
     
     console.log("Rendering Login screen."); 
 
@@ -100,7 +108,7 @@ export default function Login() {
                             autoCapitalize="none"
                             autoComplete="email"
                             keyboardType="email-address"
-                            disabled={isUIDisabled}
+                            disabled={isUIDisabled} // Uses the combined disabled state
                             style={styles.input}
                         />
                         <TextInput
@@ -110,7 +118,7 @@ export default function Login() {
                             secureTextEntry={true}
                             value={password}
                             onChangeText={setPassword}
-                            disabled={isUIDisabled}
+                            disabled={isUIDisabled} // Uses the combined disabled state
                             style={styles.input}
                         />
 
@@ -121,7 +129,7 @@ export default function Login() {
                                 mode="text"
                                 uppercase={false}
                                 onPress={() => router.push('/(auth)/forgotpassword' as Href)}
-                                disabled={isUIDisabled}
+                                disabled={isUIDisabled} // Uses the combined disabled state
                             >
                                 Forgot Password?
                             </Button>
@@ -132,7 +140,7 @@ export default function Login() {
                                 mode="contained"
                                 style={styles.dynamicButton} 
                                 onPress={handleLogin} 
-                                disabled={isUIDisabled}
+                                disabled={isUIDisabled} // Uses the combined disabled state
                                 loading={isUIDisabled}
                             >
                                 Log In
@@ -141,7 +149,7 @@ export default function Login() {
                                 mode="contained"
                                 style={styles.dynamicButton} 
                                 onPress={resetForm} 
-                                disabled={isUIDisabled}
+                                disabled={isUIDisabled} // Uses the combined disabled state
                             >
                                 Reset
                             </Button>
@@ -149,13 +157,14 @@ export default function Login() {
                                 mode="contained" 
                                 style={styles.dynamicButton} 
                                 onPress={() => router.push('/(auth)/signup' as Href)} 
-                                disabled={isUIDisabled}
+                                disabled={isUIDisabled} // Uses the combined disabled state
                             >
                                 Sign Up
                             </Button>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
+                {/* Show the activity indicator if UI is disabled (waiting for Firebase or during login attempt) */}
                 {isUIDisabled && (
                   <View style={styles.loadingOverlay}>
                       <ActivityIndicator size="large" animating={true} color={primaryColor} />

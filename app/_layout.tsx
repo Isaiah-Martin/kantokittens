@@ -1,36 +1,35 @@
 // app/_layout.tsx
 
 import { Slot, SplashScreen } from 'expo-router';
-import { useContext, useEffect } from 'react'; // Import useContext and useEffect
+import { useContext, useEffect } from 'react';
 import { LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import { AuthContext, AuthProvider } from '../context/AuthContext';
-import { FirebaseProvider } from '../context/FirebaseContext';
+import { AuthProvider } from '../context/AuthContext';
+import { FirebaseContext, FirebaseProvider } from '../context/FirebaseContext'; // Import FirebaseContext
 import { useAuthRedirect } from '../hooks/use-auth-redirect';
 
 // Prevent the native splash screen from disappearing automatically
 SplashScreen.preventAutoHideAsync();
 
 if (__DEV__) {
-  // Optional: Ignore all development warnings in dev environments only
   LogBox.ignoreAllLogs();
 }
 
 // Wrapper component to manage top-level navigation logic using the hook
 function AppNavigationWrapper() {
-    // This hook contains all the redirect logic
     useAuthRedirect(); 
     
-    // Get the loading state from AuthContext
-    const { loading } = useContext(AuthContext);
+    // Get the isReady state from FirebaseContext
+    const { isReady: firebaseIsReady } = useContext(FirebaseContext);
 
-    // Add useEffect to hide the splash screen once loading is complete
+    // Add useEffect to hide the splash screen once Firebase is ready
     useEffect(() => {
-        if (!loading) {
+        // Hide the splash screen only when Firebase initialization is complete
+        if (firebaseIsReady) {
             SplashScreen.hideAsync();
         }
-    }, [loading]); // Run this effect when the loading state changes
+    }, [firebaseIsReady]); // Run this effect when firebaseIsReady changes
 
     // The Slot renders the current page based on the router state
     return <Slot />;
@@ -39,7 +38,6 @@ function AppNavigationWrapper() {
 // The default export wraps the logic in providers
 export default function RootLayoutWrapper() {
   return (
-    // GestureHandlerRootView is necessary for many React Native libraries
     <GestureHandlerRootView style={{ flex: 1 }}>
       {/* Providers must wrap the component that consumes them */}
       <FirebaseProvider>
