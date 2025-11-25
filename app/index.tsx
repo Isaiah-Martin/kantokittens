@@ -13,11 +13,10 @@ export default function AppRoot() {
   }
 
   if (user) {
-    // If logged in, redirect to the main application screen group
-    // You may need to change '(app)' to match your file structure, e.g., '/home'
-    return <Redirect href="/home" />; 
+    // FIX: Redirect to the correct public URL /hometab based on your file structure
+    return <Redirect href="/hometab" />; 
   }
   
-  // If not logged in, redirect to the login screen
+  // Assuming login screen is at app/(auth)/login.tsx (public URL /login)
   return <Redirect href="/login" />;
 }
